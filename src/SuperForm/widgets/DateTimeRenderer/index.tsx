@@ -6,6 +6,11 @@ import moment from 'moment';
 
 const { RangePicker, MonthPicker, WeekPicker } = DatePicker;
 
+enum DateModes {
+  Second = 'Second',
+  MillionSecond = 'MillionSecond',
+}
+
 enum DateTypes {
   Date = 'Date',
   Month = 'Month',
@@ -14,12 +19,7 @@ enum DateTypes {
   Time = 'Time',
 }
 
-enum DateModes {
-  Second = 'Second',
-  MillionSecond = 'MillionSecond',
-}
-
-interface IPickersProps {
+export interface IPickersProps {
   [DateTypes.Date]: DatePickerProps,
   [DateTypes.Month]: MonthPickerProps,
   [DateTypes.Week]: WeekPickerProps,
@@ -29,7 +29,7 @@ interface IPickersProps {
 
 type RangeValues = [number?, number?];
 
-type IDateProps = IPickersProps[DateTypes] & {
+export type IDateProps = IPickersProps[DateTypes] & {
   dateType: DateTypes,
   mode: DateModes,
   value: number | RangeValues,
@@ -91,7 +91,7 @@ export default (props: IDateProps) => {
         return (
           <MonthPicker
             value={momentValue}
-            { ...other as MonthPickerProps }
+            { ...other as IPickersProps }
             onChange={handleChange}
           />
         )

@@ -4,7 +4,7 @@ import { SelectProps } from 'antd/lib/select';
 
 const { Option } = Select;
 
-type ISelectProps = {
+export type ISelectProps = {
   options: Array<{
     value?: number | string,
     text?: string | ReactElement,
