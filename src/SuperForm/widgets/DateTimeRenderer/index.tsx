@@ -19,7 +19,7 @@ enum DateTypes {
   Time = 'Time',
 }
 
-export interface IPickersProps {
+interface IPickersProps {
   [DateTypes.Date]: DatePickerProps,
   [DateTypes.Month]: MonthPickerProps,
   [DateTypes.Week]: WeekPickerProps,
@@ -91,7 +91,7 @@ export default (props: IDateProps) => {
         return (
           <MonthPicker
             value={momentValue}
-            { ...other as IPickersProps }
+            { ...other as MonthPickerProps }
             onChange={handleChange}
           />
         )

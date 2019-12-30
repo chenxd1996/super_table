@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, FunctionComponent, ComponentProps } from 'react';
 import { Select } from 'antd';
 import { SelectProps } from 'antd/lib/select';
 
@@ -19,7 +19,7 @@ export default (props: ISelectProps) => {
       {
         options.map((option = {}) => {
           const { value, text } = option;
-        return <Option value={value} key={value}>{text}</Option>
+          return <Option value={value} key={value}>{text}</Option>
         })
       }
     </Select>

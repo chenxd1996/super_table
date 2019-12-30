@@ -6,6 +6,7 @@ import { SwitchProps } from "antd/lib/switch";
 import { RateProps } from "antd/lib/rate";
 import { IDateProps } from "./widgets/DateTimeRenderer";
 import { ISelectProps } from "./widgets/SelectRenderer";
+import { GetFieldDecoratorOptions } from "antd/lib/form/Form";
 
 export enum WidgetTypes {
   INPUT = 'input',
@@ -54,12 +55,12 @@ export interface IFormItemConfig {
   dataIndex?: string,
   type: WidgetTypes,
   label?: string | Function,
-  labelStyle?: CSSStyleDeclaration,
   widgetConfig?: IWidgetProps[WidgetTypes],
   inputAdaptor?: Function;
   outputAdaptor?: Function;
-  render?: Function,
+  render?: (a: any, b: any, c: any) => React.ReactElement,
   mode?: FormModes,
   formItemProps?: FormItemProps,
+  getFieldDecoratorOptions?: GetFieldDecoratorOptions,
   children?: Array<IFormItemConfig>, // Object类型或者Array类型才有
 }

@@ -128,10 +128,13 @@ const config = {
           type: WidgetTypes.INPUT,
           label: '姓名', // 默认等于key,
           // labelStyle: {},
-          style: {},
-          // widgetConfig: {
-          //   options: [{ value: 1, text: '哈哈哈' }],
-          // },
+          widgetConfig: {
+            // options: [{ value: 1, text: '哈哈哈' }],
+            placeholder: '我日',
+          },
+          formItemProps: {
+            // required: true,
+          },
           inputAdaptor: () => {},
           outputAdaptor: () => {},
           // children: [{
@@ -198,11 +201,11 @@ const config = {
 }
 
 export default () => {
-  const { columns } = parseTableConfig<{
+  const { columns, formItems } = parseTableConfig<{
     key: string; name: string; age: number; address: string;
   }>(config.superTable);
  
   console.log('我日-----------------', columns);
-  return (<Form />);
+  return (<Form fieldItems={formItems} />);
   // return (<Table dataSource={config.dataSource} columns={columns} />);
 }

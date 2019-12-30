@@ -1,16 +1,16 @@
-import React, { Children } from 'react';
+import React, { Children, ComponentClass} from 'react';
 import { Form, Input } from 'antd';
 import { IFormItemConfig, WidgetTypes } from './type';
-import { FormProps } from 'antd/lib/form';
+import { FormComponentProps, FormItemProps } from 'antd/lib/form';
 import { getWidget } from './widgets';
 
-type IFormProps = {
+interface IFormProps extends FormComponentProps {
   fieldItems?: Array<IFormItemConfig>;
-} & FormProps;
+}
 
 const renderFormItem = (
   fieldItems: Array<IFormItemConfig>,
-  FormItem: React.Component,
+  FormItem: ComponentClass<FormItemProps>,
   getFieldDecorator: Function,
 ): React.ReactNode => {
   return (
@@ -24,19 +24,21 @@ const renderFormItem = (
             widgetConfig,
             render,
             children,
+            label = dataIndex || key,
+            formItemProps,
           } = fieldItem;
 
           let Widget = getWidget(type);
-          const config = {};
+          const widgetProps = {};
           if (widgetConfig) {
             const { defaultValue, ...other } = widgetConfig;
-            Object.assign(config, other);
+            Object.assign(widgetProps, other);
           }
 
           if (Array.isArray(children)) {
             if (type === WidgetTypes.ARRAY) {
-              Object.assign(config, {
-                addNewItem: (index: number) => {
+              Object.assign(widgetProps, {
+                getArrayItem: (index: number) => {
                   children.forEach((child) => {
                     child.key = `${key}[${index}].${child.key}`;
                     child.dataIndex = `${dataIndex}[${index}].${child.dataIndex}`;
@@ -45,21 +47,36 @@ const renderFormItem = (
                 }
               })
             } else {
+              // 这种情况是Object的情况
               children.forEach((child) => {
                 child.key = `${key}.${child.key}`;
                 child.dataIndex = `${dataIndex}.${dataIndex}`;
               });
-              // 这种情况是Object的情况
-              return renderFormItem(children, FormItem, getFieldDecorator); 
+              const childrenWidgets = renderFormItem(children, FormItem, getFieldDecorator);
+              Object.assign(widgetProps, {
+                childrenWidgets,
+              });
             }
           }
 
           if (!Widget) {
             return null;
           }
+
+          let widgetElement = <Widget {...widgetProps} />;
+
           if (typeof render === 'function') {
-            Widget = render(config, FormItem, getFieldDecorator);
+            // 自定义表单组件
+            widgetElement = render(widgetProps, FormItem, getFieldDecorator);
           }
+  
+          return (<FormItem
+            {...formItemProps}
+            label={label}
+          >
+            {getFieldDecorator(key, {
+            })(widgetElement)}
+          </FormItem>)
           // return getFieldDecorator()
         })
       }
@@ -67,16 +84,31 @@ const renderFormItem = (
   )
 }
 
-export default (props: IFormProps)  => {
-  return (<Form { ...props }>
-    <Form.Item label="我日------">
-        <Input></Input>
-        <div style={{ marginLeft: 100, width: 400 }}>
-          <Form.Item label="我日------"><Input /></Form.Item>
-        </div>
-    </Form.Item>
-    <Form.Item label="我日------">
-        <Input></Input>
-    </Form.Item>
-  </Form>)
+// const SuperForm = (props: IFormProps) => {
+//   const { fieldItems, form } = props;
+//   const { getFieldDecorator } = form!;
+//   return (
+//     <Form { ...props }>
+//       {
+//         fieldItems && renderFormItem(fieldItems, Form.Item, getFieldDecorator)
+//       }
+//     </Form>
+//   )
+// }
+
+class SuperForm extends React.Component<IFormProps> {
+  render() {
+    const { fieldItems, form } = this.props;
+    const { getFieldDecorator } = form!;
+    return (
+      <Form>
+        {
+          fieldItems && renderFormItem(fieldItems, Form.Item, getFieldDecorator)
+        }
+      </Form> 
+    );
+  }
+  
 }
+
+export default Form.create<IFormProps>()(SuperForm);

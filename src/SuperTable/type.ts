@@ -1,6 +1,6 @@
-import { ColumnProps } from "antd/lib/table";
-import { IFormItemConfig } from "../SuperForm/type";
+import { ColumnProps, TableProps } from "antd/lib/table";
 import { FormProps } from "antd/lib/form";
+import { IFormItemConfig } from "../SuperForm/type";
 
 export interface IMapperConfig {
   mapper: string,
@@ -36,8 +36,7 @@ export interface IFieldConfig<RecordType> {
   search?: ISearch;
 }
 
-
-export interface ISuperTableConfig<RecordType> {
+export type ISuperTableConfig<RecordType> = {
   fields: Array<IFieldConfig<RecordType>>;
   addBtnText?: string;
   addBtnStyle?: CSSStyleDeclaration;
@@ -45,14 +44,18 @@ export interface ISuperTableConfig<RecordType> {
   editBtnText?: string;
   editBtnStyle?: CSSStyleDeclaration;
   editDataBtn?: boolean | Function;
-  deleleDataBtnText?: string;
-  deleteDataBtnStyle?: CSSStyleDeclaration;
-  deleteDataBtn?: boolean | Function;
+  deleleBtnText?: string;
+  deleteBtnStyle?: CSSStyleDeclaration;
+  deleteBtn?: boolean | Function;
+  header?: Function;
+  body?: Function;
   headerWidgets?: Function;
-  searchSorter?: Array<string> | Function;
-  columnSorter?: Array<string> | Function;
-  formFieldsSorter?: Array<string> | Function; 
-  formHeader?: string | boolean | Function;
-  formFooter?: boolean | Object | Function;
+  headerSearch?: Function;
+  columnsSorter?: Function;
+  formFieldsSorter?: Function;
+  formModalHeader?: string | Function;
+  formModalFooter?: boolean | Object | Function;
   formProps?: FormProps;
-}
+  showSelection?: boolean;
+  showColumnConfig?: Object;
+} & TableProps<RecordType>;
