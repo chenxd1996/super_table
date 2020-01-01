@@ -36,7 +36,7 @@ export type IDateProps = IPickersProps[DateTypes] & {
   onChange: (value: number | RangeValues) => {}
 };
 
-export default (props: IDateProps) => {
+export default React.memo((props: IDateProps) => {
   const { dateType, mode, value, onChange, ...other } = props;
   
   // antd的日期组件输入输出都是momonet
@@ -122,5 +122,4 @@ export default (props: IDateProps) => {
   }, [dateType, getMomentValue, getMomentValues, handleChange, other, value]);
 
   return renderFunc();
-}
-
+});

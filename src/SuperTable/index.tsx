@@ -3,6 +3,7 @@ import { Table } from 'antd';
 import { parseTableConfig } from './utils';
 import { WidgetTypes, FormModes } from '../SuperForm/type';
 import Form from '../SuperForm';
+import { ISuperTableConfig } from './type';
 
 // const config = {
 //   dataSource: [
@@ -93,11 +94,16 @@ import Form from '../SuperForm';
 //   }
 // }
 
-const config = {
+const config: {
+  dataSource: any;
+  superTable: ISuperTableConfig<{
+    key: string; name: string; age: number; address: string;
+  }>;
+} = {
   dataSource: [
     {
       key: '1',
-      name: '胡彦斌',
+      name: [{ firstName: '陈', secondName: '旭东'}],
       age: 32,
       address: '西湖区湖底公园1号',
     }
@@ -109,7 +115,6 @@ const config = {
         dataIndex: 'name',
         column: {
           title: '姓名', // 默认等于key,
-          style: {},
           // map: { mapper: '123' }
           // render: undefined || {
           //   mapper: 'time',
@@ -125,7 +130,7 @@ const config = {
           }
         },
         formItem: {
-          type: WidgetTypes.INPUT,
+          type: WidgetTypes.ARRAY,
           label: '姓名', // 默认等于key,
           // labelStyle: {},
           widgetConfig: {
@@ -137,27 +142,38 @@ const config = {
           },
           inputAdaptor: () => {},
           outputAdaptor: () => {},
-          // children: [{
-          //   type: WidgetTypes.INPUT,
-          //   label: '姓', // 默认等于key,
-          //   // labelStyle: {},
-          //   style: {},
-          //   inputAdaptor: () => {},
-          //   outputAdaptor: () => {},
-          // }, {
-          //   type: WidgetTypes.INPUT,
-          //   label: '姓', // 默认等于key,
-          //   // labelStyle: {},
-          //   style: {},
-          //   inputAdaptor: () => {},
-          //   outputAdaptor: () => {},
-          // }],
+          children: [{
+            key: 'firstName',
+            dataIndex: 'firstName',
+            type: WidgetTypes.INPUT,
+            label: '姓', // 默认等于key,
+            inputAdaptor: () => {},
+            outputAdaptor: () => {},
+            widgetConfig: {
+              placeholder: '请输入姓',
+            },
+            // getFieldDecoratorOptions: {
+            //   rules: [
+            //     { validator:(arg) => { console.log('干-------', arg ); } }
+            //   ],
+            // }
+          }, {
+            key: 'secondName',
+            dataIndex: 'secondName',
+            type: WidgetTypes.INPUT,
+            label: '名', // 默认等于key,
+            inputAdaptor: () => {},
+            outputAdaptor: () => {},
+            widgetConfig: {
+              placeholder: '请输入名字',
+            }
+          }],
           mode: FormModes.ADD,
         },
         search: {
           config: {
             label: '名称', // 默认等于key,
-            place: 'inner',
+            // place: 'inner',
             // labelStyle: {},
             // style: {},
             type: WidgetTypes.INPUT, // 默认与formItem一致
@@ -174,7 +190,7 @@ const config = {
     editDataBtn: undefined || true || {
       style: {},
     },
-    deleteDataBtn: undefined || true || {
+    deleteBtn: undefined || true || {
       style: {},
     },
     // headerWidgets: () => {

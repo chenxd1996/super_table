@@ -1,4 +1,4 @@
-import React, { ReactElement, FunctionComponent, ComponentProps } from 'react';
+import React, { ReactElement } from 'react';
 import { Select } from 'antd';
 import { SelectProps } from 'antd/lib/select';
 
@@ -11,7 +11,7 @@ export type ISelectProps = {
   }>,
 } & SelectProps;
 
-export default (props: ISelectProps) => {
+export default React.memo((props: ISelectProps) => {
   const { options, ...other } = props;
 
   return (
@@ -24,4 +24,4 @@ export default (props: ISelectProps) => {
       }
     </Select>
   )
-}
+});

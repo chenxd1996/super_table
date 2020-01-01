@@ -39,13 +39,13 @@ export interface IFieldConfig<RecordType> {
 export type ISuperTableConfig<RecordType> = {
   fields: Array<IFieldConfig<RecordType>>;
   addBtnText?: string;
-  addBtnStyle?: CSSStyleDeclaration;
+  addBtnStyle?: React.CSSProperties ;
   addDataBtn?: boolean | Function;
   editBtnText?: string;
-  editBtnStyle?: CSSStyleDeclaration;
+  editBtnStyle?: React.CSSProperties ;
   editDataBtn?: boolean | Function;
   deleleBtnText?: string;
-  deleteBtnStyle?: CSSStyleDeclaration;
+  deleteBtnStyle?: React.CSSProperties ;
   deleteBtn?: boolean | Function;
   header?: Function;
   body?: Function;

@@ -6,8 +6,9 @@ import {
   Rate,
 } from 'antd';
 
-import DateTimePicker, { IDateProps } from './DateTimeRenderer';
-import Select, { ISelectProps } from './SelectRenderer';
+import DateTimePicker from './DateTimeRenderer';
+import Select from './SelectRenderer';
+import ArrayRenderer from './ArrayRenderer';
 import { WidgetTypes } from '../type';
 
 
@@ -21,15 +22,14 @@ export const widgetsMap = {
   [WidgetTypes.SELECT]: Select,
   [WidgetTypes.DATETIMEPICKER]: DateTimePicker,
   [WidgetTypes.CHECKBOX]: Input,
-  [WidgetTypes.ARRAY]: Input,
-  [WidgetTypes.OBJECT]: Input,
+  [WidgetTypes.ARRAY]: ArrayRenderer,
+  [WidgetTypes.OBJECT]: null,
   [WidgetTypes.UPLOAD]: Input,
   [WidgetTypes.RICHTEXT]: Input,
   [WidgetTypes.RADIO]: Input,
 }
 
-type WrappedComponentProps = ISelectProps | IDateProps | any;
 
-export const getWidget = (type: WidgetTypes) : React.ComponentClass | React.FunctionComponent<WrappedComponentProps> => {
+export const getWidget = (type: WidgetTypes) : React.ComponentClass<any> | React.FunctionComponent<any> | null => {
   return widgetsMap[type];
 }
