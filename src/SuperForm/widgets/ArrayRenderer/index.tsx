@@ -1,14 +1,15 @@
-import React, { useCallback, useState } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useCallback, useState, ReactElement } from 'react';
 import { FormItemProps } from 'antd/lib/form';
 import { Button } from 'antd';
 import { ButtonProps } from 'antd/lib/button';
 import ArrayItem from './ArrayItem';
-import { GetArrayItem, GetFieldDecoratorType } from '../../type';
+import { GetFieldDecoratorType } from '../../type';
 
 type DeleteArrayItem = (index: number) => void;
 
-interface IArrayRendererProps {
-  getArrayItem: GetArrayItem; // 新增子项
+export interface IArrayRendererProps {
+  // getArrayItem: GetArrayItem; // 新增子项
   label: string; // 标签名
   FormItem: React.ComponentClass<FormItemProps>, // antd的FormItem组件
   getFieldDecorator: GetFieldDecoratorType,
@@ -23,7 +24,10 @@ interface IArrayRendererProps {
   deleteBtnText?: string; // 删除按钮的文案
   deleteBtnStyle?: React.CSSProperties; // 删除按钮样式
   getDeleteBtn?: (deleteArrayItem: DeleteArrayItem) => React.ReactElement; // 定制删除按钮
-  defaultValue?: any;
+  addItem: () => void;
+  deleteItem: (index: number) => void;
+  items: Array<Array<ReactElement>>;
+  // initialValue?: Array<any>;
 };
 
 const DEFAULT_ADD_TEXT = '添加子项';
@@ -71,7 +75,6 @@ const Label = React.memo((props: ILabelProps) => {
 
 export default React.memo((props: IArrayRendererProps) => {
   const {
-    getArrayItem,
     label,
     FormItem,
     nodeKey,
@@ -84,20 +87,13 @@ export default React.memo((props: IArrayRendererProps) => {
     deleteBtnText = DEFAULT_DELETE_TEXT,
     deleteBtnStyle,
     getDeleteBtn,
-    getFieldDecorator,
-    defaultValue,
+    addItem,
+    deleteItem,
+    items,
+    // getFieldDecorator,
+    // defaultValue,
+    // initialValue = [],
   } = props;
-
-  const [items, setItems] = useState<Array<Array<React.ReactElement>>>([]);
-  const addItem = useCallback(() => {
-    const newItems = [...items, getArrayItem(items.length)];
-    setItems(newItems);
-  }, [getArrayItem, items]);
-
-  const deleteItem = useCallback((index: number) => {
-    items.splice(index, 1);
-    setItems([...items]);
-  }, [items]);
 
   const labelElement = (
     <Label

@@ -9,7 +9,7 @@ import {
 import DateTimePicker from './DateTimeRenderer';
 import Select from './SelectRenderer';
 import ArrayRenderer from './ArrayRenderer';
-import { WidgetTypes } from '../type';
+import { WidgetTypes, ComponentType } from '../type';
 
 
 // todo: null都为未完成的组件
@@ -30,6 +30,6 @@ export const widgetsMap = {
 }
 
 
-export const getWidget = (type: WidgetTypes) : React.ComponentClass<any> | React.FunctionComponent<any> | null => {
+export const getWidget = (type: WidgetTypes) : ComponentType => {
   return widgetsMap[type];
 }

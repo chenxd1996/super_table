@@ -21,13 +21,24 @@ export default React.memo((props: IArrayItemProps) => {
     deleteBtnText,
     deleteItem,
   } = props;
+
+  const defaultDeleteBtn = (
+    <Button
+      style={deleteBtnStyle}
+      onClick={deleteItem}
+      size="small"
+      type="danger"
+    >
+        {deleteBtnText}
+    </Button>
+  );
   
   return (
     <Card
       title={arrayItemTitle}
-      actions={[
-        deleteBtn || <Button style={deleteBtnStyle} onClick={deleteItem}>{deleteBtnText}</Button>
-      ]}
+      size="small"
+      extra={deleteBtn || defaultDeleteBtn}
+      // bordered={false}
     >
       <div
         style={arrayItemContainerStyle}

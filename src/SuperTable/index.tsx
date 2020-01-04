@@ -136,6 +136,9 @@ const config: {
           widgetConfig: {
             // options: [{ value: 1, text: '哈哈哈' }],
             placeholder: '我日',
+            // getArrayItemTitle: (index: number) => {
+            //   return `我日-----${index}`;
+            // },
           },
           formItemProps: {
             // required: true,
@@ -152,11 +155,11 @@ const config: {
             widgetConfig: {
               placeholder: '请输入姓',
             },
-            // getFieldDecoratorOptions: {
-            //   rules: [
-            //     { validator:(arg) => { console.log('干-------', arg ); } }
-            //   ],
-            // }
+            getFieldDecoratorOptions: {
+              rules: [
+                { validator:(arg) => { console.log('干-------', arg ); arg.callback() } }
+              ],
+            }
           }, {
             key: 'secondName',
             dataIndex: 'secondName',
@@ -222,6 +225,6 @@ export default () => {
   }>(config.superTable);
  
   console.log('我日-----------------', columns);
-  return (<Form fieldItems={formItems} />);
+  return (<Form fieldItems={formItems} initialValues={config.dataSource[0]} />);
   // return (<Table dataSource={config.dataSource} columns={columns} />);
 }

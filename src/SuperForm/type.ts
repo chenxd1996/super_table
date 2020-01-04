@@ -6,7 +6,8 @@ import { SwitchProps } from "antd/lib/switch";
 import { RateProps } from "antd/lib/rate";
 import { IDateProps } from "./widgets/DateTimeRenderer";
 import { ISelectProps } from "./widgets/SelectRenderer";
-import { WrappedFormUtils, ValidationRule } from "antd/lib/form/Form";
+import { IArrayRendererProps } from './widgets/ArrayRenderer';
+import { WrappedFormUtils, ValidationRule, GetFieldDecoratorOptions } from "antd/lib/form/Form";
 
 export enum WidgetTypes {
   INPUT = 'input',
@@ -30,7 +31,7 @@ export enum FormModes {
   BOTH = 'BOTH',
 }
 
-export type GetArrayItem = (index: number) => Array<React.ReactElement>;
+export type GetArrayItem = (index: number) => React.ReactNode;
 export interface DefaultWidgetProps {
   defaultValue?: any,
   childrenWidgets?: Array<React.ReactNode>;
@@ -46,7 +47,7 @@ export interface IWidgetProps {
   [WidgetTypes.SELECT]: ISelectProps & DefaultWidgetProps,
   [WidgetTypes.DATETIMEPICKER]: IDateProps,
   [WidgetTypes.CHECKBOX]: DefaultWidgetProps,
-  [WidgetTypes.ARRAY]: DefaultWidgetProps,
+  [WidgetTypes.ARRAY]: IArrayRendererProps & DefaultWidgetProps,
   [WidgetTypes.OBJECT]: DefaultWidgetProps,
   [WidgetTypes.UPLOAD]: DefaultWidgetProps,
   [WidgetTypes.RICHTEXT]: DefaultWidgetProps,
@@ -79,20 +80,37 @@ export interface IFormItemConfig {
   inputAdaptor?: Function;
   outputAdaptor?: Function;
   render?: (args: {
+    value: any,
+    values: FormValues,
     widgetProps: {
       [field: string]: any,
     },
     FormItem: React.ComponentClass,
     getFieldDecorator: GetFieldDecoratorType,
     widgetElement: React.ReactElement | null,
-    fieldInfo: IFormItemConfig,
   }) => React.ReactElement,
   mode?: FormModes,
   formItemProps?: FormItemProps,
-  getFieldDecoratorOptions?: { rules?: WrappedRule[] },
+  getFieldDecoratorOptions?: CustomGetFieldDecoratorOptions,
   children?: Array<IFormItemConfig>, // Object类型或者Array类型才有
 }
+
+
+interface AppendGetFieldDecoratorOptions {
+  rules?: WrappedRule[],
+}
+export type CustomGetFieldDecoratorOptions = 
+  AppendGetFieldDecoratorOptions & Pick<GetFieldDecoratorOptions, Exclude<keyof GetFieldDecoratorOptions, keyof AppendGetFieldDecoratorOptions>>;
+
+export type GetFieldDecoratorWrapper =
+  <T extends Object = {}>(id: keyof T, options?: CustomGetFieldDecoratorOptions | undefined) => (node: React.ReactNode) => React.ReactNode;
 
 export type GetFieldDecoratorType = WrappedFormUtils['getFieldDecorator'];
 
 export type WidgetProps = IWidgetProps[WidgetTypes];
+
+export interface FormValues {
+  [field: string]: any;
+}
+
+export type ComponentType = React.ComponentClass<any> | React.FunctionComponent<any> | null;
