@@ -9,6 +9,8 @@ interface IArrayItemProps {
   deleteBtnStyle?: React.CSSProperties; // 删除按钮样式
   deleteBtn?: ReactElement; // 定制删除按钮
   deleteItem: () => void;
+  maxLen: number;
+  minLen: number;
 }
 
 export default React.memo((props: IArrayItemProps) => {

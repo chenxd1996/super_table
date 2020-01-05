@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useCallback, useState, ReactElement } from 'react';
+import React, { ReactElement } from 'react';
 import { FormItemProps } from 'antd/lib/form';
 import { Button } from 'antd';
 import { ButtonProps } from 'antd/lib/button';
@@ -56,7 +56,7 @@ const Label = React.memo((props: ILabelProps) => {
     addBtnText,
   } = props;
   return (
-    <span>
+    <>
       {label}
       {
         addBtn || (
@@ -69,7 +69,7 @@ const Label = React.memo((props: ILabelProps) => {
           >{addBtnText}</Button>
         )
       }
-    </span>
+    </>
   );
 });
 
@@ -135,6 +135,5 @@ export default React.memo((props: IArrayRendererProps) => {
         })
       }
     </FormItem>
-  )
-  
+  );
 });

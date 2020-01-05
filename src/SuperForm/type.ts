@@ -1,3 +1,4 @@
+import { WrappedFormUtils, ValidationRule, GetFieldDecoratorOptions } from "antd/lib/form/Form";
 import { FormItemProps } from "antd/lib/form";
 import { InputProps } from "antd/lib/input";
 import { InputNumberProps } from "antd/lib/input-number";
@@ -7,7 +8,10 @@ import { RateProps } from "antd/lib/rate";
 import { IDateProps } from "./widgets/DateTimeRenderer";
 import { ISelectProps } from "./widgets/SelectRenderer";
 import { IArrayRendererProps } from './widgets/ArrayRenderer';
-import { WrappedFormUtils, ValidationRule, GetFieldDecoratorOptions } from "antd/lib/form/Form";
+import { SliderProps } from "antd/lib/slider";
+import { CascaderProps } from "antd/lib/cascader";
+import { RadioGroupProps } from "antd/lib/radio";
+import { CheckboxGroupProps } from "antd/lib/checkbox";
 
 export enum WidgetTypes {
   INPUT = 'input',
@@ -23,6 +27,8 @@ export enum WidgetTypes {
   SWITCH = 'switch',
   RADIO = 'radio',
   TREESELECT = 'treeSelect',
+  SLIDER = 'slider',
+  CASCADER = 'cascader',
 }
 
 export enum FormModes {
@@ -36,22 +42,25 @@ export interface DefaultWidgetProps {
   defaultValue?: any,
   childrenWidgets?: Array<React.ReactNode>;
   getArrayItem?: GetArrayItem;
+  onChange?: OnChange;
 }
 
 export interface IWidgetProps {
   [WidgetTypes.INPUT]: InputProps & DefaultWidgetProps;
   [WidgetTypes.INPUTNUMBER]: InputNumberProps & DefaultWidgetProps;
   [WidgetTypes.TREESELECT]: TreeSelectProps<any> & DefaultWidgetProps;
-  [WidgetTypes.SWITCH]: SwitchProps & DefaultWidgetProps,
-  [WidgetTypes.RATE]: RateProps & DefaultWidgetProps,
-  [WidgetTypes.SELECT]: ISelectProps & DefaultWidgetProps,
-  [WidgetTypes.DATETIMEPICKER]: IDateProps,
-  [WidgetTypes.CHECKBOX]: DefaultWidgetProps,
-  [WidgetTypes.ARRAY]: IArrayRendererProps & DefaultWidgetProps,
-  [WidgetTypes.OBJECT]: DefaultWidgetProps,
-  [WidgetTypes.UPLOAD]: DefaultWidgetProps,
-  [WidgetTypes.RICHTEXT]: DefaultWidgetProps,
-  [WidgetTypes.RADIO]: DefaultWidgetProps,
+  [WidgetTypes.SWITCH]: SwitchProps & DefaultWidgetProps;
+  [WidgetTypes.RATE]: RateProps & DefaultWidgetProps;
+  [WidgetTypes.SELECT]: ISelectProps & DefaultWidgetProps;
+  [WidgetTypes.DATETIMEPICKER]: IDateProps;
+  [WidgetTypes.CHECKBOX]: CheckboxGroupProps & DefaultWidgetProps;
+  [WidgetTypes.ARRAY]: IArrayRendererProps & DefaultWidgetProps;
+  [WidgetTypes.OBJECT]: DefaultWidgetProps;
+  [WidgetTypes.UPLOAD]: DefaultWidgetProps;
+  [WidgetTypes.RICHTEXT]: DefaultWidgetProps;
+  [WidgetTypes.RADIO]: RadioGroupProps & DefaultWidgetProps;
+  [WidgetTypes.SLIDER]: SliderProps & DefaultWidgetProps;
+  [WidgetTypes.CASCADER]: CascaderProps & DefaultWidgetProps;
 }
 
 interface AppendRule {
@@ -71,24 +80,27 @@ export type WrappedRule = AppendRule & Pick<ValidationRule, Exclude<keyof Valida
 
 export type LabelType = string | React.ReactNode | Function;
 
+export type InputAdaptor = (value: any) => any;
+export type OutputAdaptor = (value: any) => any;
+
 export interface IFormItemConfig {
   key?: string,
   dataIndex?: string,
   type: WidgetTypes,
   label?: LabelType,
   widgetConfig?: IWidgetProps[WidgetTypes],
-  inputAdaptor?: Function;
-  outputAdaptor?: Function;
-  render?: (args: {
+  inputAdaptor?: InputAdaptor;
+  outputAdaptor?: OutputAdaptor;
+  getRenderer?: (args: {
     value: any,
     values: FormValues,
+    DefaultRenderer: ComponentType,
     widgetProps: {
       [field: string]: any,
     },
     FormItem: React.ComponentClass,
     getFieldDecorator: GetFieldDecoratorType,
-    widgetElement: React.ReactElement | null,
-  }) => React.ReactElement,
+  }) => { renderer: ComponentType, props?: Object },
   mode?: FormModes,
   formItemProps?: FormItemProps,
   getFieldDecoratorOptions?: CustomGetFieldDecoratorOptions,
@@ -113,4 +125,7 @@ export interface FormValues {
   [field: string]: any;
 }
 
-export type ComponentType = React.ComponentClass<any> | React.FunctionComponent<any> | null;
+export type ComponentType<T = any> = React.ComponentClass<T> | React.FunctionComponent<T> | null;
+export type OnChange = (value: any) => void;
+export type OnFormChange = ( change: { [field: string]: any }, formVaules: FormValues) => void;
+export type OnFormChangeWrapper = (update: { [field: string]: any }) => void;

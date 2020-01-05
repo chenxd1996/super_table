@@ -4,6 +4,9 @@ import memorize from 'memoize-one';
 import { FormComponentProps, FormItemProps } from 'antd/lib/form';
 import { WrappedFormUtils, ValidationRule } from 'antd/lib/form/Form';
 import _get from 'lodash.get';
+import _set from 'lodash.set';
+import _cloneDeep from 'lodash.clonedeep';
+
 import {
   IFormItemConfig,
   WidgetTypes,
@@ -14,13 +17,17 @@ import {
   GetArrayItem,
   FormValues,
   GetFieldDecoratorWrapper,
+  OnFormChange,
+  OnFormChangeWrapper,
 } from './type';
 import { getWidget } from './widgets';
 import ArrayWrapper from './ArrayWrapper';
+import WidgetWrapper from './WidgetWrapper';
 
 interface IFormProps extends FormComponentProps {
   fieldItems: Array<IFormItemConfig>;
   initialValues?: FormValues;
+  onChange?: OnFormChange;
 }
 
 /**
@@ -54,9 +61,9 @@ const shouldRenderFormItem = (type: WidgetTypes, hasCustomRenderer: boolean) => 
 /**
  * 如果标签是个函数，则执行函数，获取标签
  */
-const getLabel = (label: LabelType, getArrayItem?: GetArrayItem) => {
+const getLabel = (label: LabelType) => {
   if (typeof label === 'function') {
-    return label(getArrayItem);
+    return label();
   }
   return label;
 }
@@ -66,7 +73,9 @@ const renderFormItem = memorize((
   FormItem: ComponentClass<FormItemProps>,
   getFieldDecorator: GetFieldDecoratorWrapper,
   form: WrappedFormUtils,
-  initialValues?: FormValues,
+  handleFormChange: OnFormChangeWrapper,
+  initialValues: FormValues,
+  currentValues: FormValues,
 ): React.ReactNode => {
   return (
     fieldItems.map((fieldItem) => {
@@ -76,14 +85,17 @@ const renderFormItem = memorize((
         key = dataIndex,
         label = dataIndex || key,
         widgetConfig,
-        render,
+        getRenderer,
         children,
         formItemProps,
         getFieldDecoratorOptions = { rules: [] },
+        inputAdaptor,
+        outputAdaptor,
       } = fieldItem;
 
 
       let Widget = getWidget(type);
+
       const widgetProps: WidgetProps = {};
     
       if (widgetConfig) {
@@ -105,23 +117,30 @@ const renderFormItem = memorize((
 
       let widgetElement;
 
+      // 数组类型获取子项
+      const getArrayItem: GetArrayItem = (index: number) => {
+        const childrenCopy = children!.map((child) => {
+          const fullKey = `${key}[${index}].${child.key}`;
+          const fullDataIndex = `${dataIndex}[${index}].${child.dataIndex}`;
+          return {
+            ...child,
+            key: fullKey,
+            dataIndex: fullDataIndex,
+          }
+        });
+        return renderFormItem(
+          childrenCopy,
+          FormItem,
+          getFieldDecorator,
+          form,
+          handleFormChange,
+          initialValues,
+          currentValues,
+        );
+      };
+
       if (Array.isArray(children)) {
         if (isArrayType) {
-          const getArrayItem: GetArrayItem = (index: number) => {
-            const childrenCopy = children.map((child) => {
-              const fullKey = `${key}[${index}].${child.key}`;
-              const fullDataIndex = `${dataIndex}[${index}].${child.dataIndex}`;
-              return {
-                ...child,
-                key: fullKey,
-                dataIndex: fullDataIndex,
-              }
-            });
-            return renderFormItem(
-              childrenCopy, FormItem, getFieldDecorator, form, initialValues,
-            );
-          };
-
           Object.assign(widgetProps, {
             getFieldDecorator,
             FormItem,
@@ -131,13 +150,7 @@ const renderFormItem = memorize((
             formItemProps,
             initialValue,
           });
-
-          widgetElement = (<ArrayWrapper
-            {...widgetProps}
-            Widget={Widget}
-            getArrayItem={getArrayItem}
-          />);
-        } else {
+        } else if (isObjectType) {
           // 这种情况是Object的情况
           const childrenCopy = children.map((child) => {
             const fullKey = `${key}.${child.key}`;
@@ -149,7 +162,13 @@ const renderFormItem = memorize((
             }
           });
           const childrenWidgets = renderFormItem(
-            childrenCopy, FormItem, getFieldDecorator, form, initialValues,
+            childrenCopy,
+            FormItem,
+            getFieldDecorator,
+            form,
+            handleFormChange,
+            initialValues,
+            currentValues,
           );
 
           Object.assign(widgetProps, {
@@ -158,23 +177,45 @@ const renderFormItem = memorize((
         }
       }
 
-      if (!widgetElement) {
-        widgetElement = Widget && <Widget {...widgetProps} />;
-      }
-
-      const hasCustomRenderer = typeof render === 'function';
-
+      const hasCustomRenderer = typeof getRenderer === 'function';
       if (hasCustomRenderer) {
         // 自定义表单组件
-        widgetElement = render!({
+        const data = getRenderer!({
           value,
           values: formValues,
           FormItem,
           getFieldDecorator,
           widgetProps,
-          widgetElement,
+          DefaultRenderer: Widget,
         });
+
+        Widget = data.renderer;
+        Object.assign(widgetProps, data.props || {});
       }
+
+      if (isArrayType) {
+        Object.assign(widgetProps, {
+          WidgetClass: Widget,
+          getArrayItem: getArrayItem,
+        });
+        Widget = ArrayWrapper;
+      }
+
+      // widgetElement = Widget && <Widget {...widgetProps} />;
+
+      widgetElement = (
+        <WidgetWrapper
+          inputAdaptor={inputAdaptor}
+          outAdaptor={outputAdaptor}
+          widgetProps={widgetProps}
+          WidgetClass={Widget}
+          handleFormChange={handleFormChange}
+          dataIndex={dataIndex!}
+          key={key}
+          form={form}
+          currentValues={currentValues}
+        />
+      );
 
       if (!shouldRenderFormItem(type, hasCustomRenderer)) {
         // 没有自定义表单的情况下并且是数组类型的情况下
@@ -184,7 +225,7 @@ const renderFormItem = memorize((
       return (
         <FormItem
           {...formItemProps}
-          label={getLabel(label, widgetProps.getArrayItem)} // Array类型的标签在ArrayRender渲染
+          label={getLabel(label)} // Array类型的标签在ArrayRender渲染
           key={key}
         >
           {
@@ -204,6 +245,8 @@ const renderFormItem = memorize((
 });
 
 class SuperForm extends React.Component<IFormProps> {
+  private values: FormValues = {}; // 保存经过处理后的数据
+
   private wrapGetFieldDecorator(getFieldDecorator: GetFieldDecoratorType) {
     const { form } = this.props;
 
@@ -218,19 +261,46 @@ class SuperForm extends React.Component<IFormProps> {
     return getFieldDecoratorWrapepr;
   }
 
+  private handleFormChange(change: { [field: string]: any }) {
+    const { onChange } = this.props;
+    if (typeof onChange === 'function') {
+      const currentValues = this.values;
+      Object.keys(change).forEach((key) => {
+        _set(currentValues, key, change[key]);
+      });
+      onChange(currentValues, change);      
+    }
+  }
+
+  private getCurrentValues = memorize((initialValues) => {
+    this.values = {
+      ..._cloneDeep(initialValues),
+      ...this.values,
+    }
+    return this.values;
+  });
+
   render() {
-    const { fieldItems, form, initialValues } = this.props;
+    const { fieldItems, form, initialValues = {} } = this.props;
     const { getFieldDecorator } = form!;
     const wrappedGetFieldDecorator = this.wrapGetFieldDecorator(getFieldDecorator);
+    const currentValues = this.getCurrentValues(initialValues);
     return (
       <Form>
         {
-          fieldItems && renderFormItem(fieldItems, Form.Item, wrappedGetFieldDecorator, form, initialValues)
+          fieldItems && renderFormItem(
+            fieldItems,
+            Form.Item,
+            wrappedGetFieldDecorator,
+            form,
+            this.handleFormChange.bind(this),
+            initialValues,
+            currentValues,
+          )
         }
       </Form> 
     );
   }
-  
 }
 
 export default Form.create<IFormProps>()(SuperForm);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Table } from 'antd';
 import { parseTableConfig } from './utils';
 import { WidgetTypes, FormModes } from '../SuperForm/type';
@@ -103,7 +103,7 @@ const config: {
   dataSource: [
     {
       key: '1',
-      name: [{ firstName: '陈', secondName: '旭东'}],
+      name: [1],
       age: 32,
       address: '西湖区湖底公园1号',
     }
@@ -139,25 +139,34 @@ const config: {
             // getArrayItemTitle: (index: number) => {
             //   return `我日-----${index}`;
             // },
+            options: [{
+              value: 1,
+              label: '我日',
+            }, {
+              value: 2,
+              label: '我干',
+            }]
           },
           formItemProps: {
             // required: true,
           },
-          inputAdaptor: () => {},
-          outputAdaptor: () => {},
+          // inputAdaptor: () => {},
+          // outputAdaptor: () => {},
           children: [{
             key: 'firstName',
             dataIndex: 'firstName',
             type: WidgetTypes.INPUT,
             label: '姓', // 默认等于key,
-            inputAdaptor: () => {},
-            outputAdaptor: () => {},
+            inputAdaptor: (value) => {
+              return value;
+            },
+            // outputAdaptor: () => {},
             widgetConfig: {
               placeholder: '请输入姓',
             },
             getFieldDecoratorOptions: {
               rules: [
-                { validator:(arg) => { console.log('干-------', arg ); arg.callback() } }
+                { validator:(arg) => { console.log('干-------', arg ); arg.callback('erro') } }
               ],
             }
           }, {
@@ -165,8 +174,8 @@ const config: {
             dataIndex: 'secondName',
             type: WidgetTypes.INPUT,
             label: '名', // 默认等于key,
-            inputAdaptor: () => {},
-            outputAdaptor: () => {},
+            // inputAdaptor: () => {},
+            // outputAdaptor: (value) => { return '我日' },
             widgetConfig: {
               placeholder: '请输入名字',
             }
@@ -223,8 +232,18 @@ export default () => {
   const { columns, formItems } = parseTableConfig<{
     key: string; name: string; age: number; address: string;
   }>(config.superTable);
- 
-  console.log('我日-----------------', columns);
-  return (<Form fieldItems={formItems} initialValues={config.dataSource[0]} />);
+
+  const ref = useRef<any>();
+
+  useEffect(() => {
+    console.log('我干---------', ref.current);
+  }, [])
+  
+  return (<Form
+    ref={ref}
+    fieldItems={formItems}
+    onChange={(update, allValues) => { console.log('我日-------', update, allValues) }}
+    initialValues={config.dataSource[0]} />
+  );
   // return (<Table dataSource={config.dataSource} columns={columns} />);
 }
