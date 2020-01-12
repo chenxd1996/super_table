@@ -27,6 +27,8 @@ export interface IArrayRendererProps {
   addItem: () => void;
   deleteItem: (index: number) => void;
   items: Array<Array<ReactElement>>;
+  maxLen: number;
+  minLen: number;
   // initialValue?: Array<any>;
 };
 
@@ -45,6 +47,7 @@ interface ILabelProps {
   addBtnStyle?: React.CSSProperties;
   addBtnProps?:  ButtonProps;
   addBtn?: React.ReactElement;
+  canAdd: boolean;
 }
 const Label = React.memo((props: ILabelProps) => {
   const {
@@ -54,12 +57,13 @@ const Label = React.memo((props: ILabelProps) => {
     addBtnProps,
     addBtn,
     addBtnText,
+    canAdd,
   } = props;
   return (
     <>
       {label}
       {
-        addBtn || (
+        canAdd ? addBtn || (
           <Button
             style={addBtnStyle}
             onClick={addItem}
@@ -67,7 +71,7 @@ const Label = React.memo((props: ILabelProps) => {
             type="primary"
             {...addBtnProps}
           >{addBtnText}</Button>
-        )
+        ) : null
       }
     </>
   );
@@ -90,10 +94,15 @@ export default React.memo((props: IArrayRendererProps) => {
     addItem,
     deleteItem,
     items,
+    minLen = 0,
+    maxLen = Number.MAX_SAFE_INTEGER,
     // getFieldDecorator,
     // defaultValue,
     // initialValue = [],
   } = props;
+
+  const canAdd = items.length < maxLen;
+  const canDelete = items.length > minLen;
 
   const labelElement = (
     <Label
@@ -102,6 +111,7 @@ export default React.memo((props: IArrayRendererProps) => {
       addItem={addItem}
       addBtnStyle={addBtnStyle}
       addBtn={getAddBtn && getAddBtn(addItem)}
+      canAdd={canAdd}
     />
   );
 
@@ -130,6 +140,7 @@ export default React.memo((props: IArrayRendererProps) => {
               deleteBtnStyle={deleteBtnStyle}
               deleteBtn={getDeleteBtn && getDeleteBtn(deleteItem)}
               deleteItem={() => deleteItem(index)}
+              canDelete={canDelete}
             />
           );
         })

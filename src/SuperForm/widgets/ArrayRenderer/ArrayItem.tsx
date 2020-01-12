@@ -9,8 +9,7 @@ interface IArrayItemProps {
   deleteBtnStyle?: React.CSSProperties; // 删除按钮样式
   deleteBtn?: ReactElement; // 定制删除按钮
   deleteItem: () => void;
-  maxLen: number;
-  minLen: number;
+  canDelete: boolean;
 }
 
 export default React.memo((props: IArrayItemProps) => {
@@ -22,7 +21,9 @@ export default React.memo((props: IArrayItemProps) => {
     deleteBtnStyle,
     deleteBtnText,
     deleteItem,
+    canDelete,
   } = props;
+
 
   const defaultDeleteBtn = (
     <Button
@@ -39,7 +40,7 @@ export default React.memo((props: IArrayItemProps) => {
     <Card
       title={arrayItemTitle}
       size="small"
-      extra={deleteBtn || defaultDeleteBtn}
+      extra={canDelete ? (deleteBtn || defaultDeleteBtn) : null}
       // bordered={false}
     >
       <div

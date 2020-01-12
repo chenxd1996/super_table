@@ -12,6 +12,7 @@ import { SliderProps } from "antd/lib/slider";
 import { CascaderProps } from "antd/lib/cascader";
 import { RadioGroupProps } from "antd/lib/radio";
 import { CheckboxGroupProps } from "antd/lib/checkbox";
+import { IUploadRenerProps } from "./widgets/UploadRenderer";
 
 export enum WidgetTypes {
   INPUT = 'input',
@@ -56,7 +57,7 @@ export interface IWidgetProps {
   [WidgetTypes.CHECKBOX]: CheckboxGroupProps & DefaultWidgetProps;
   [WidgetTypes.ARRAY]: IArrayRendererProps & DefaultWidgetProps;
   [WidgetTypes.OBJECT]: DefaultWidgetProps;
-  [WidgetTypes.UPLOAD]: DefaultWidgetProps;
+  [WidgetTypes.UPLOAD]: IUploadRenerProps & DefaultWidgetProps;
   [WidgetTypes.RICHTEXT]: DefaultWidgetProps;
   [WidgetTypes.RADIO]: RadioGroupProps & DefaultWidgetProps;
   [WidgetTypes.SLIDER]: SliderProps & DefaultWidgetProps;

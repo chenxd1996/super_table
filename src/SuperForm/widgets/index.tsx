@@ -13,6 +13,7 @@ import {
 import DateTimePicker from './DateTimeRenderer';
 import Select from './SelectRenderer';
 import ArrayRenderer from './ArrayRenderer';
+import UploadRenderer from './UploadRenderer';
 import { WidgetTypes, ComponentType } from '../type';
 
 const RadioGroup = Radio.Group;
@@ -30,7 +31,7 @@ export const widgetsMap = {
   [WidgetTypes.CHECKBOX]: CheckboxGroup,
   [WidgetTypes.ARRAY]: ArrayRenderer,
   [WidgetTypes.OBJECT]: null,
-  [WidgetTypes.UPLOAD]: Input,
+  [WidgetTypes.UPLOAD]: UploadRenderer,
   [WidgetTypes.RICHTEXT]: Input,
   [WidgetTypes.RADIO]: RadioGroup,
   [WidgetTypes.SLIDER]: Slider,

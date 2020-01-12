@@ -62,7 +62,7 @@ export default React.forwardRef((props: IWidgetWrapperProps, ref) => {
     value: val,
     // value,
     onChange: handleChange,
-    ref,
+    // ref,
   }
 
   return WidgetClass && (
