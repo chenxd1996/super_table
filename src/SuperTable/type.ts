@@ -1,8 +1,7 @@
-import React, { ReactElement, ReactNode } from 'react';
-import { ColumnProps, TableProps, SorterResult, SortOrder } from "antd/lib/table";
-import { FormProps } from "antd/lib/form";
+import { ReactElement, ReactNode } from 'react';
+import { ColumnProps, TableProps, SortOrder } from "antd/lib/table";
 import { IFormItemConfig } from "../SuperForm/type";
-import { ButtonProps } from "antd/lib/button";
+import  { ButtonProps } from "antd/lib/button";
 
 export interface IMapperConfig {
   mapper: string,
@@ -73,13 +72,20 @@ export type OnSaveData = <RecordType>(values: RecordPart<RecordType>, mode: Form
 
 export type OnDelete = <RecordType>(records: Array<RecordPart<RecordType>>) => Promise<void> | void;
 
-export type OpenCreateModal<RecordType> = (values: RecordPart<RecordType>) => Promise<void>;
+export type OpenCreateModal = () => Promise<void>;
 
 export type OpenEditModal<RecordType> = (values: RecordPart<RecordType>) => Promise<void>;
 
 export type DeleteRecord<RecordType> = (record: Array<RecordPart<RecordType>>) => Promise<void>;
 
-export type FetchData = (page: number) => Promise<void>;
+export type FetchData = (page?: number) => Promise<void>;
+
+export type HeaderWidgets = <RecordType>(selectedRows: Array<RecordType>, methods: {
+  openCreateModal: OpenCreateModal;
+  openEditModal: OpenEditModal<RecordType>;
+  deleteRecord: DeleteRecord<RecordType>;
+  fetchData: FetchData;
+}) => Array<ReactElement>;
 
 export type ISuperTableConfig<RecordType> = {
   fields: Array<IFieldConfig<RecordType>>;
@@ -89,12 +95,16 @@ export type ISuperTableConfig<RecordType> = {
   editBtnText?: string;
   editBtnProps?: ButtonProps;
   showEditBtn?: boolean;
-  deleleBtnText?: string;
+  deleteBtnText?: string;
   deleteBtnProps?: ButtonProps;
   showDeleteBtn?: boolean;
+  searchBtnText?: string;
+  searchBtnProps?: ButtonProps;
+  resetBtnText?: string;
+  resetBtnProps?: ButtonProps;
   header?: Function;
   body?: Function;
-  headerWidgets?: Function;
+  headerWidgets?: HeaderWidgets;
   columnsSorter?: Function;
   formFieldsSorter?: Function;
   formModalTitle?: string | ReactNode;
@@ -115,7 +125,7 @@ export type ISuperTableConfig<RecordType> = {
   // refreshAfterDelete?: boolean; 
   onFetch?: (
     pagination: Pagination,
-    filters: Array<Filter<RecordType>>,
+    filters: Filter<RecordType>,
     sorter?: Sorter
   ) => Promise<{total: number} | void> | {total: number} | void;
   onOpenModal?: OnOpenModal;
@@ -130,7 +140,7 @@ export interface Pagination {
   total?: number | undefined;
 }
 
-export type Filter<RecordType> = Partial<RecordType>;
+export type Filter<RecordType> = { [P in keyof RecordType]?: any; };
 export type RecordPart<RecordType> = Partial<RecordType>;;
 
 export type Sorter = {

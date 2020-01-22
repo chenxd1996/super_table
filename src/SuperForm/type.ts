@@ -13,6 +13,7 @@ import { CascaderProps } from "antd/lib/cascader";
 import { RadioGroupProps } from "antd/lib/radio";
 import { CheckboxGroupProps } from "antd/lib/checkbox";
 import { IUploadRenerProps } from "./widgets/UploadRenderer";
+import { ReactElement, ReactNode } from "react";
 
 export enum WidgetTypes {
   INPUT = 'input',
@@ -101,7 +102,7 @@ export interface IFormItemConfig {
     },
     FormItem: React.ComponentClass,
     getFieldDecorator: GetFieldDecoratorType,
-  }) => { renderer: ComponentType, props?: Object },
+  }) => ReactElement | null,
   mode?: FormModes,
   formItemProps?: FormItemProps,
   getFieldDecoratorOptions?: CustomGetFieldDecoratorOptions,
@@ -128,5 +129,5 @@ export interface FormValues {
 
 export type ComponentType<T = any> = React.ComponentClass<T> | React.FunctionComponent<T> | null;
 export type OnChange = (value: any) => void;
-export type OnFormChange = ( change: { [field: string]: any }, formVaules: FormValues) => void;
+export type OnFormChange = ( formVaules: FormValues, change: { [field: string]: any }) => void;
 export type OnFormChangeWrapper = (update: { [field: string]: any }) => void;

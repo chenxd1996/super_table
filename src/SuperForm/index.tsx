@@ -1,8 +1,8 @@
-import React, { ComponentClass } from 'react';
+import React, { ComponentClass, ReactElement, ReactNode } from 'react';
 import { Form } from 'antd';
 import memorize from 'memoize-one';
 import { FormComponentProps, FormItemProps } from 'antd/lib/form';
-import { WrappedFormUtils, ValidationRule } from 'antd/lib/form/Form';
+import { WrappedFormUtils, ValidationRule, FormProps } from 'antd/lib/form/Form';
 import _get from 'lodash.get';
 import _set from 'lodash.set';
 import _cloneDeep from 'lodash.clonedeep';
@@ -24,11 +24,15 @@ import { getWidget } from './widgets';
 import ArrayWrapper from './ArrayWrapper';
 import WidgetWrapper from './WidgetWrapper';
 
-interface IFormProps extends FormComponentProps {
+interface IFormPropsAppend {
   fieldItems: Array<IFormItemConfig>;
   initialValues?: FormValues;
   onChange?: OnFormChange;
 }
+
+export type IFormProps = IFormPropsAppend
+  & Pick<FormProps, Exclude<keyof FormProps, keyof IFormPropsAppend>>
+  & FormComponentProps;
 
 /**
  * 如果有validator则包一层，主要是为了注入表单其他字段的值，以提供校验
@@ -115,7 +119,7 @@ const renderFormItem = memorize((
       // 当前值
       const value = _get(formValues, dataIndex!, initialValue);
 
-      let widgetElement;
+      let widgetElement: ReactElement | null;
 
       // 数组类型获取子项
       const getArrayItem: GetArrayItem = (index: number) => {
@@ -178,9 +182,10 @@ const renderFormItem = memorize((
       }
 
       const hasCustomRenderer = typeof getRenderer === 'function';
+
       if (hasCustomRenderer) {
         // 自定义表单组件
-        const data = getRenderer!({
+        widgetElement = getRenderer!({
           value,
           values: formValues,
           FormItem,
@@ -189,26 +194,37 @@ const renderFormItem = memorize((
           DefaultRenderer: Widget,
         });
 
-        Widget = data.renderer;
-        Object.assign(widgetProps, data.props || {});
+        // Widget = data.renderer;
+        // Object.assign(widgetProps, data.props || {});
+      } else {
+        widgetElement = Widget && <Widget {...widgetProps} />;
+      }
+
+      if (!widgetElement) {
+        return null;
       }
 
       if (isArrayType) {
-        Object.assign(widgetProps, {
-          WidgetClass: Widget,
-          getArrayItem: getArrayItem,
-        });
-        Widget = ArrayWrapper;
+        // Object.assign(widgetProps, {
+        //   WidgetClass: Widget,
+        //   getArrayItem: getArrayItem,
+        // });
+        // Widget = ArrayWrapper;
+        widgetElement = (
+          <ArrayWrapper
+            getArrayItem={getArrayItem}
+            elementToWrap={widgetElement}
+          />
+        );
       }
-
-      // widgetElement = Widget && <Widget {...widgetProps} />;
 
       widgetElement = (
         <WidgetWrapper
           inputAdaptor={inputAdaptor}
           outAdaptor={outputAdaptor}
-          widgetProps={widgetProps}
-          WidgetClass={Widget}
+          // widgetProps={widgetProps}
+          // WidgetClass={Widget}
+          elementToWrap={widgetElement}
           handleFormChange={handleFormChange}
           dataIndex={dataIndex!}
           key={key}
@@ -281,12 +297,21 @@ class SuperForm extends React.Component<IFormProps> {
   });
 
   render() {
-    const { fieldItems, form, initialValues = {} } = this.props;
+    const {
+      fieldItems,
+      form,
+      initialValues = {},
+      children,
+      onChange,
+      ...other
+    } = this.props;
     const { getFieldDecorator } = form!;
     const wrappedGetFieldDecorator = this.wrapGetFieldDecorator(getFieldDecorator);
     const currentValues = this.getCurrentValues(initialValues);
     return (
-      <Form>
+      <Form
+        {...other}
+      >
         {
           fieldItems && renderFormItem(
             fieldItems,
@@ -298,6 +323,7 @@ class SuperForm extends React.Component<IFormProps> {
             currentValues,
           )
         }
+        {children}
       </Form> 
     );
   }

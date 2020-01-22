@@ -1,0 +1,12 @@
+.top-area-container {
+  margin: 5px;
+  .ant-form-inline {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .header-widget-item:not(:last-child) {
+    margin-right: 10px;
+  }
+}

@@ -28,7 +28,7 @@ const DEFAULT_EDIT_TITLE = '编辑数据';
 const DEFAULT_OK_TEXT = '保存';
 const DEFAULT_CANCAL_TEXT = '取消';
 
-export default <RecordType extends {}>(props: IFormModalProps) => {
+export default (props: IFormModalProps) => {
   
   const defaultTitle = props.mode === FormModalModes.ADD ? DEFAULT_CREATE_TITLE : DEFAULT_EDIT_TITLE;
 

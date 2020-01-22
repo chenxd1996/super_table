@@ -1,12 +1,13 @@
-import React, { useRef, useEffect, ReactElement, useCallback, useState } from 'react';
+import React, { useRef, useEffect, ReactElement, useCallback, useState, Component } from 'react';
 import { Table } from 'antd';
-import { ISuperTableConfig, ColumnConfig, RowOperations, Pagination, Filter, Sorter, SearchItemConfig, ISearch, FormModalModes, RecordPart, DeleteRecord, OpenEditModal } from "./type";
+import { ISuperTableConfig, ColumnConfig, RowOperations, Pagination, Filter, Sorter, SearchItemConfig, ISearch, FormModalModes, RecordPart, DeleteRecord, OpenEditModal, IFieldConfig, FetchData, OpenCreateModal } from "./type";
 import { ColumnProps, TableRowSelection } from 'antd/lib/table';
 import Button from 'antd/lib/button';
 import { IFormItemConfig, FormValues } from '../SuperForm/type';
 import { isFunction, isBoolean } from '../common';
 import TopArea from './TopArea';
 import FormModal from './FormModal';
+import memoizeOne from 'memoize-one';
 
 const getRenderFunc = () => {
   return (text: string, record: any, index: number) => {
@@ -114,21 +115,23 @@ const addRowOperations = <RecordType extends {}>(
 
 const parseSearch = (search: boolean | ISearch,  key: string, dataIndex: string, formItem?: IFormItemConfig) => {
   let searchConfig = null;
+  const {
+    inputAdaptor,
+    outputAdaptor,
+    widgetConfig,
+    mode,
+    getFieldDecoratorOptions,
+    formItemProps,
+    getRenderer,
+    ...other
+  } = formItem || {};
+
+  const {
+    defaultValue,
+    ...otherWidgetConfig
+  } = widgetConfig || {};
+
   if (isBoolean(search)) {
-    const {
-      inputAdaptor,
-      outputAdaptor,
-      widgetConfig,
-      mode,
-      getFieldDecoratorOptions,
-      ...other
-    } = formItem || {};
-
-    const {
-      defaultValue,
-      ...otherWidgetConfig
-    } = widgetConfig || {};
-
     if (formItem) {
       searchConfig = {
         widgetConfig: otherWidgetConfig,
@@ -136,25 +139,33 @@ const parseSearch = (search: boolean | ISearch,  key: string, dataIndex: string,
       }
     }
   } else {
-    searchConfig = { key, dataIndex, ...search.config };
+  
+    searchConfig = {
+      key,
+      dataIndex,
+      ...search.config,
+      widgetConfig: { ...otherWidgetConfig, ...search.config?.widgetConfig },
+    };
   }
 
   return searchConfig as SearchItemConfig;
 }
 
-const parseTableConfig = <RecordType extends {}>(
-  tableConfig: ISuperTableConfig<RecordType>,
+const parseTableConfig = memoizeOne(<RecordType extends {}>(
+  fields: IFieldConfig<RecordType>[],
+  // tableConfig: ISuperTableConfig<RecordType>,
+  rowOperations: RowOperations<RecordType> | undefined,
   openEditModal: OpenEditModal<RecordType>,
   deleteRecord: DeleteRecord<RecordType>,
 ) => {
-  const {
-    fields,
-    rowOperations,
-  } = tableConfig;
+  // const {
+  //   fields,
+  //   rowOperations,
+  // } = tableConfig;
   let columns: Array<ColumnProps<RecordType>> = [];
   const formItems: Array<IFormItemConfig> = [];
   const searchItems: Array<SearchItemConfig> = [];
-  // const searchFields = [];
+  const defaultOutterFilters: Filter<RecordType> = {};
 
   fields.forEach((field) => {
     const {
@@ -172,7 +183,8 @@ const parseTableConfig = <RecordType extends {}>(
 
     if (formItem) {
       Object.assign(formItem, {
-        key, dataIndex
+        key,
+        dataIndex,
       });
       formItems.push(formItem)
     }
@@ -180,6 +192,12 @@ const parseTableConfig = <RecordType extends {}>(
     if (search) {
       const searchConfig = parseSearch(search, key, dataIndex, formItem);
       if (searchConfig) {
+        const {
+          widgetConfig,
+        } = searchConfig;
+        if (widgetConfig?.defaultValue !== undefined) {
+          defaultOutterFilters[dataIndex as keyof Filter<RecordType>] = widgetConfig?.defaultValue;
+        }
         searchItems.push(searchConfig);
       }
     }
@@ -187,8 +205,8 @@ const parseTableConfig = <RecordType extends {}>(
 
   columns = addRowOperations(columns, openEditModal, deleteRecord, rowOperations);
   
-  return { columns, formItems, searchItems };
-}
+  return { columns, formItems, searchItems, defaultOutterFilters };
+});
 
 const getDefaultPagination = <RecordType extends {}>(
   pagination: ISuperTableConfig<RecordType>['pagination']
@@ -246,227 +264,329 @@ const getDefaultSelectedRows = <RecordType extends {
   return selectedRows;
 }
 
-interface IStaticProperties<RecordType> {
-  pagination?: Pagination;
-  hasFetch: boolean;
-  filters?: Filter<RecordType>;
+interface ISuperTableState<RecordType> {
   sorter?: Sorter;
-};
+  internalPagination: Pagination;
+  modalVisible: boolean;
+  formModalMode: FormModalModes;
+  formValues: RecordPart<RecordType>;
+  selectedRowKeys: string[] | number[];
+  selectedRows: Array<RecordType>;
+  outterFilters: Filter<RecordType> | undefined;
+  innerFilters: Filter<RecordType> | undefined;
+}
 
-export default function<RecordType extends {
+export default class SuperTable<RecordType extends {
   [field: string]: any;
-} = any>(
-  props: ISuperTableConfig<RecordType>,
-  // openCreateModal: () => void,
-) {
-  // const { columns, formItems } = parseTableConfig<{
-  //   key: string; name: string; age: number; address: string;
-  // }>(config.superTable);
+}> extends Component<ISuperTableConfig<RecordType>, ISuperTableState<RecordType>> {
+  hasFetch = false;
 
-  const {
-    dataSource,
-    pagination,
-    onChange,
-    onDelete,
-    onFetch,
-    onOpenModal,
-    onSaveData,
-    fetchAtFirst = true,
-    fetchAfterCreate = true,
-    fetchAfterDelete = true,
-    fetchAfterEdit = true,
-    formModalTitle,
-    formModalOkText,
-    formModalOkBtnProps,
-    formModalCancelText,
-    formModalCancelBtnProps,
-    rowSelection,
-    rowKey,
-    ...other
-  } = props;
+  constructor(props: ISuperTableConfig<RecordType>) {
+    super(props);
+    const {
+      fields,
+      rowOperations,
+      pagination,
+      rowSelection,
+    } = props;
 
-  const _this = useRef<IStaticProperties<RecordType>>({
-    hasFetch: false,
-  }).current;
+    const { defaultOutterFilters }
+      = parseTableConfig(fields, rowOperations, this.openEditModal, this.deleteRecord);
+    const defaultPagination = getDefaultPagination(pagination);
+    const defaultSelectedRowKeys = getDefaultSelectedRowKeys(rowSelection);
+    const defaultSelectedRows = getDefaultSelectedRows(rowSelection);
+
+    this.state = {
+      sorter: undefined,
+      internalPagination: defaultPagination,
+      modalVisible: false,
+      formModalMode: FormModalModes.ADD,
+      formValues: {},
+      selectedRowKeys: defaultSelectedRowKeys,
+      selectedRows: defaultSelectedRows,
+      outterFilters: defaultOutterFilters,
+      innerFilters: undefined,
+    }
+  }
+
+  componentDidMount() {
+    const { fetchAtFirst  } = this.props;
+
+    if (fetchAtFirst && !this.hasFetch) {
+      this.hasFetch = true;
+      this.fetchData();
+    }
+  }
   
-  const [filters, setFilters] = useState<Array<Filter<RecordType>>>([]);
-  const [sorter, setSorter] = useState<Sorter>();
-  const [internalPagination, setInternalPagination] = useState<Pagination>(
-    getDefaultPagination(pagination)
-  );
-  const [modalVisible, setModalVisible] = useState(false);
-  const [formModalMode, setFormModalMode] = useState<FormModalModes>(FormModalModes.ADD);
-  const [formValues, setFormValues] = useState<RecordPart<RecordType>>();
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[] | number[]>(
-    getDefaultSelectedRowKeys(rowSelection)
-  );
-  const [selectedRows, setSelectedRows] = useState<Array<RecordType>>(
-    getDefaultSelectedRows(rowSelection)
-  );
+  openModal = (mode: FormModalModes, values: RecordPart<RecordType>) => {
+    this.setState({
+      formModalMode: mode,
+      formValues: values,
+      modalVisible: true,
+    })
+  }
 
-  const fetchData = useCallback(async (page?: number) => {
+  closeModal = () => {
+    this.setState({
+      modalVisible: false,
+    });
+  }
+
+  openCreateModal: OpenCreateModal = async () => {
+    const { onOpenModal } = this.props;
+    const data = {};
+    if (isFunction(onOpenModal)) {
+      const ret = await onOpenModal({}, FormModalModes.ADD);
+      Object.assign(data, ret);
+    }
+    this.openModal(FormModalModes.ADD, { ...data });
+  }
+
+  openEditModal: OpenEditModal<RecordType> = async (values) => {
+    const { onOpenModal } = this.props;
+    const data = values;
+    if (isFunction(onOpenModal)) {
+      const ret = await onOpenModal(values, FormModalModes.EDIT);
+      Object.assign(data, ret);
+    }
+    this.openModal(FormModalModes.EDIT, { ...data });
+  }
+
+  fetchData: FetchData = async (page = 0) => {
+    const { onFetch } = this.props;
+    const {
+      internalPagination,
+      innerFilters = {},
+      outterFilters = {},
+      sorter,
+    } = this.state;
+    let newInternalPagination = internalPagination;
     if (page && Number.isInteger(page)) {
-      setInternalPagination({
+      newInternalPagination = {
         ...internalPagination,
         current: page,
-      });
+      };
     }
     if (isFunction(onFetch)) {
-      const ret = await onFetch(internalPagination, filters, sorter);
-      setInternalPagination({
-        ...internalPagination,
+      const ret = await onFetch(newInternalPagination, {
+        ...innerFilters,
+        ...outterFilters,
+      }, sorter);
+      newInternalPagination = {
+        ...newInternalPagination,
         ...ret,
-      });
+      };
     }
-  }, [onFetch, internalPagination, filters, sorter]);
+    this.setState({
+      internalPagination: newInternalPagination,
+    });
+  };
 
-  const openModal = useCallback((mode: FormModalModes, values: RecordPart<RecordType> ) => {
-    setFormModalMode(mode);
-    setFormValues(values);
-    setModalVisible(true);
-  }, []);
-
-  const deleteRecord = useCallback(async (records: Array<RecordPart<RecordType>>) => {
+  deleteRecord: DeleteRecord<RecordType> = async (records) => {
+    const { onDelete, fetchAfterDelete } = this.props;
     if (isFunction(onDelete)) {
       await onDelete(records);
     }
     if (fetchAfterDelete) {
-      await fetchData(0);
+      await this.fetchData(0);
     }
-  }, [fetchAfterDelete, fetchData, onDelete]);
+  }
 
-  const openCreateModal = useCallback(async () => {
-    const data = {};
-    if (isFunction(onOpenModal)) {
-      const ret = await onOpenModal({}, FormModalModes.ADD);
-      Object.assign(ret, data);
-    }
-    openModal(FormModalModes.ADD, { ...data });
-  }, [onOpenModal, openModal]);
+  handleChange = (
+    newPagination: Pagination,
+    innerFilters: Filter<RecordType>,
+    sorter: Sorter,
+  ) => {
+    const {
+      internalPagination,
+    } = this.state;
 
-  const openEditModal = useCallback(async (values: RecordPart<RecordType>) => {
-    const data = values;
-    if (isFunction(onOpenModal)) {
-      const ret = await onOpenModal(values, FormModalModes.EDIT);
-      Object.assign(ret, data);
-    }
-    openModal(FormModalModes.EDIT, { ...data });
-  }, [onOpenModal, openModal]);
-
-  
-  const closeModal = useCallback(() => {
-    setModalVisible(false);
-  }, []);
-
-  const {
-    columns,
-    formItems,
-    searchItems,
-  } = parseTableConfig<RecordType>(other, openEditModal, deleteRecord);
-
-  const { hasFetch } = _this;
-
-
-  useEffect(() => {
-    if (fetchAtFirst && !hasFetch) {
-      fetchData();
-    }
-  }, [fetchAtFirst, fetchData, hasFetch]);
-
-  const handlePageChange = useCallback(
-    (
-      newPagination: Pagination,
-      newFilters: Filter<RecordType>,
-      sorter: Sorter,
-    ) => {
-    setInternalPagination({
+    newPagination = {
       ...internalPagination,
       ...newPagination,
-    });
-    setFilters({ ...filters, ...newFilters});
-    setSorter(sorter);
-    fetchData();
-  }, [fetchData, filters, internalPagination]);
+    };
 
-  const wrappedOnChange: ISuperTableConfig<RecordType>['onChange'] = useCallback((pagination, filters, sorter, extra) => {
-    handlePageChange(pagination, filters, sorter);
+    this.setState({
+      internalPagination: newPagination,
+      innerFilters,
+      sorter,
+    });
+
+    this.fetchData();
+  }
+
+
+  wrappedOnChange: ISuperTableConfig<RecordType>['onChange'] = (pagination, filters, sorter, extra) => {
+    const {
+      onChange
+    } = this.props;
+
+    this.handleChange(pagination, filters, sorter);
     if (isFunction(onChange)) {
       onChange(pagination, filters, sorter, extra);
     }
-  }, [handlePageChange, onChange]);
+  }
 
-  const handleSelectedRowsChange = useCallback((selectedRowKeys: string[] | number[], selectedRows: RecordType[]) => {
-    setSelectedRowKeys(selectedRowKeys);
-    setSelectedRows(selectedRows);
+  handleSelectedRowsChange = (selectedRowKeys: string[] | number[], selectedRows: RecordType[]) => {
+    this.setState({
+      selectedRowKeys,
+      selectedRows,
+    });
+
+    const {
+      rowSelection
+    } = this.props;
+  
     if (rowSelection) {
       const { onChange } = rowSelection;
       if (isFunction(onChange)) {
         onChange(selectedRowKeys, selectedRows);
       }
     }
-  }, [rowSelection]);
+  }
 
-  const getWrappedRowSelection = useCallback(() => {
-    if (!rowSelection) {
-      return;
-    }
+  getWrappedRowSelection = () => {
+    const { rowSelection } = this.props;
+    const { selectedRowKeys } = this.state;
     return {
       ...rowSelection,
-      onChange: handleSelectedRowsChange,
-      selectedRowKeys: selectedRowKeys,
+      onChange: this.handleSelectedRowsChange,
+      selectedRowKeys,
     }
-  }, [handleSelectedRowsChange, rowSelection, selectedRowKeys]);
+  }
 
-  // const wrappedRowSelection = getWrapped
+  handleSaveData = async (values: FormValues) => {
+    const {
+      onSaveData,
+      fetchAfterCreate,
+      fetchAfterEdit,
+    } = this.props;
 
-  const handleSaveData = useCallback(async (values: FormValues) => {
+    const {
+      formModalMode,
+    } = this.state;
+
     if (isFunction(onSaveData)) {
       await onSaveData(values, formModalMode);
     }
-    closeModal();
+    this.closeModal();
     if (
       (formModalMode === FormModalModes.ADD && fetchAfterCreate)
       || (formModalMode === FormModalModes.EDIT && fetchAfterEdit)  
     ) {
-      await fetchData(0);
+      await this.fetchData(0);
     }
-  }, [closeModal, fetchAfterCreate, fetchAfterEdit, fetchData, formModalMode, onSaveData]);
+  }
 
+  setOutterFilters = (outterFilters: Filter<RecordType>) => {
+    this.setState({
+      outterFilters,
+    });
+  }
 
-  return (
-    <>
-      <TopArea
-        searchItems={searchItems}
-        selectedRowKeys={selectedRowKeys}
-        selectedRows={selectedRows}
-        fetchData={fetchData}
-        openCreateModal={openCreateModal}
-        openEditModal={openEditModal}
-        deleteRecord={deleteRecord}
-      />
-      <FormModal
-        visible={modalVisible}
-        formItems={formItems}
-        mode={formModalMode}
-        onCancel={closeModal}
-        onOk={handleSaveData}
-        title={formModalTitle}
-        okText={formModalOkText}
-        okBtnProps={formModalOkBtnProps}
-        cancelText={formModalCancelText}
-        cancelBtnProps={formModalCancelBtnProps}
-      />
-      <Table
-        dataSource={dataSource}
-        columns={columns}
-        pagination={{
-          ...pagination,
-          ...internalPagination,
-        }}
-        onChange={wrappedOnChange}
-        rowKey={rowKey}
-        rowSelection={getWrappedRowSelection()}
-      />
-    </>
-  );
+  render() {
+    const {
+      dataSource,
+      pagination,
+      onChange,
+      onDelete,
+      onFetch,
+      onOpenModal,
+      onSaveData,
+      fetchAtFirst,
+      fetchAfterCreate,
+      fetchAfterDelete,
+      fetchAfterEdit,
+      formModalTitle,
+      formModalOkText,
+      formModalOkBtnProps,
+      formModalCancelText,
+      formModalCancelBtnProps,
+      rowSelection,
+      rowKey,
+      addBtnText,
+      addBtnProps,
+      showAddBtn,
+      editBtnText,
+      editBtnProps,
+      showEditBtn,
+      deleteBtnText,
+      deleteBtnProps,
+      showDeleteBtn,
+      searchBtnProps,
+      searchBtnText,
+      resetBtnText,
+      resetBtnProps,
+      rowOperations,
+      fields,
+      headerWidgets,
+      ...other
+    } = this.props;
+
+    const {
+      columns,
+      formItems,
+      searchItems,
+    } = parseTableConfig(fields, rowOperations, this.openEditModal, this.deleteRecord);
+
+    const {
+      selectedRows,
+      selectedRowKeys,
+      modalVisible,
+      formModalMode,
+      internalPagination,
+    } = this.state;
+
+    return (
+      <>
+        <TopArea
+          searchItems={searchItems}
+          selectedRowKeys={selectedRowKeys}
+          selectedRows={selectedRows}
+          fetchData={this.fetchData}
+          openCreateModal={this.openCreateModal}
+          openEditModal={this.openEditModal}
+          deleteRecord={this.deleteRecord}
+          addBtnText={addBtnText}
+          addBtnProps={addBtnProps}
+          showAddBtn={showAddBtn}
+          editBtnText={editBtnText}
+          editBtnProps={editBtnProps}
+          showEditBtn={showEditBtn}
+          deleteBtnText={deleteBtnText}
+          deleteBtnProps={deleteBtnProps}
+          showDeleteBtn={showDeleteBtn}
+          searchBtnText={searchBtnText}
+          searchBtnProps={searchBtnProps}
+          resetBtnText={resetBtnText}
+          resetBtnProps={resetBtnProps}
+          setFilters={this.setOutterFilters}
+          headerWidgets={headerWidgets}
+        />
+        <FormModal
+          visible={modalVisible}
+          formItems={formItems}
+          mode={formModalMode}
+          onCancel={this.closeModal}
+          onOk={this.handleSaveData}
+          title={formModalTitle}
+          okText={formModalOkText}
+          okBtnProps={formModalOkBtnProps}
+          cancelText={formModalCancelText}
+          cancelBtnProps={formModalCancelBtnProps}
+        />
+        <Table
+          dataSource={dataSource}
+          columns={columns}
+          pagination={{
+            ...pagination,
+            ...internalPagination,
+          }}
+          onChange={this.wrappedOnChange}
+          rowKey={rowKey}
+          rowSelection={this.getWrappedRowSelection()}
+        />
+      </>
+    );
+  }
 }

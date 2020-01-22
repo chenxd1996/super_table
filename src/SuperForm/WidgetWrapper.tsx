@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, ReactElement } from 'react';
 import {
   InputAdaptor, OutputAdaptor,
-  ComponentType, WidgetProps, OnChange, OnFormChangeWrapper, FormValues,
+  OnChange, OnFormChangeWrapper, FormValues,
 } from './type';
 import { WrappedFormUtils } from 'antd/lib/form/Form';
 
@@ -10,8 +10,9 @@ interface IWidgetWrapperProps {
   onChange?: OnChange;
   inputAdaptor?: InputAdaptor;
   outAdaptor?: OutputAdaptor;
-  WidgetClass: ComponentType;
-  widgetProps: WidgetProps;
+  // WidgetClass: ComponentType;
+  // widgetProps: WidgetProps;
+  elementToWrap: ReactElement;
   handleFormChange: OnFormChangeWrapper;
   dataIndex: string;
   form: WrappedFormUtils;
@@ -24,19 +25,22 @@ export default React.forwardRef((props: IWidgetWrapperProps, ref) => {
     onChange,
     inputAdaptor,
     outAdaptor,
-    WidgetClass,
-    widgetProps,
+    // WidgetClass,
+    // widgetProps,
+    elementToWrap,
     handleFormChange,
     dataIndex,
     form,
     currentValues,
     ...other
   } = props;
+  
+  const originalProps = elementToWrap.props;
 
   const handleChange = useCallback((event: any) => {
     const value = (event && event.target && event.target.value) || event;
-    if (widgetProps.onChange) {
-      widgetProps.onChange(event);
+    if (originalProps.onChange) {
+      originalProps.onChange(event);
     }
     if (onChange) {
       onChange(event);
@@ -49,25 +53,21 @@ export default React.forwardRef((props: IWidgetWrapperProps, ref) => {
     }
     const change = { [dataIndex]: outputValue };
     handleFormChange(change);
-  }, [dataIndex, form, handleFormChange, onChange, outAdaptor, widgetProps]);
+  }, [dataIndex, form, handleFormChange, onChange, originalProps, outAdaptor]);
 
   let val = value;
   if (typeof inputAdaptor === 'function') {
     val = inputAdaptor(value);
   }
 
-  const newWidgetProps = {
+  const newProps = {
     ...other,
-    ...widgetProps,
+    ...originalProps,
     value: val,
     // value,
     onChange: handleChange,
     // ref,
   }
 
-  return WidgetClass && (
-    <WidgetClass
-      {...newWidgetProps}
-    />
-  );
+  return React.cloneElement(elementToWrap, newProps);
 });

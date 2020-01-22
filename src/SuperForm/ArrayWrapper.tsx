@@ -2,20 +2,21 @@
  * ArrayWrapper对于Array类型的组件封装一层
  * 提供addItem、deleteItem和items，使得子组件使用更简单
  */
-import React, { useState, useCallback } from 'react';
-import { GetArrayItem, ComponentType } from './type';
+import React, { useState, useCallback, ReactElement } from 'react';
+import { GetArrayItem } from './type';
 
 interface IArrayWrapperProps {
   getArrayItem: GetArrayItem; // 新增子项
   initialValue?: Array<any>;
-  WidgetClass?:  ComponentType;
+  elementToWrap: ReactElement;
 }
 
 export default React.memo((props: IArrayWrapperProps) => {
   const {
     initialValue = [],
     getArrayItem,
-    WidgetClass,
+    // WidgetClass,
+    elementToWrap,
     ...other
   } = props;
   const [items, setItems] = useState<Array<number>>(initialValue.map((item, index) => index));
@@ -29,20 +30,18 @@ export default React.memo((props: IArrayWrapperProps) => {
     items.splice(index, 1);
     setItems([...items]);
   }, [items]);
- 
-  if (WidgetClass) {
-    return (
-      <WidgetClass
-        {...{
-          ...other,
-          addItem,
-          deleteItem,
-          items: items.map((index) => {
-            return getArrayItem(index);
-          }),
-        }}
-      />
-    )
+
+  const { props: originalProps } = elementToWrap;
+  
+  const newProps = {
+    ...originalProps,
+    ...other,
+    addItem,
+    deleteItem,
+    items: items.map((index) => {
+      return getArrayItem(index);
+    }),
   }
-  return null;
+ 
+  return React.cloneElement(elementToWrap, newProps);
 });

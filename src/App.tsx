@@ -20,7 +20,7 @@ const config: ISuperTableConfig<{
       key: 'name',
       dataIndex: 'name',
       column: {
-        title: '姓名', // 默认等于key,
+        title: '姓名123', // 默认等于key,
         // map: { mapper: '123' }
         // render: undefined || {
         //   mapper: 'time',
@@ -37,7 +37,7 @@ const config: ISuperTableConfig<{
       },
       formItem: {
         type: WidgetTypes.UPLOAD,
-        label: '姓名', // 默认等于key,
+        label: '姓名123', // 默认等于key,
         // labelStyle: {},
         widgetConfig: {
           // options: [{ value: 1, text: '哈哈哈' }],
