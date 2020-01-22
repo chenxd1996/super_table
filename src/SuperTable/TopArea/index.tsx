@@ -180,7 +180,6 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
       if (!widget) {
         return null;
       }
-      const newProps = { ...widget.props };
       return (
         <div className="header-widget-item" key={shortId.generate()}>
           {
