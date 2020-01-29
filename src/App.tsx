@@ -21,6 +21,7 @@ const config: ISuperTableConfig<{
       dataIndex: 'name',
       column: {
         title: '姓名123', // 默认等于key,
+        width: 100,
         // map: { mapper: '123' }
         // render: undefined || {
         //   mapper: 'time',
@@ -37,7 +38,7 @@ const config: ISuperTableConfig<{
       },
       formItem: {
         type: WidgetTypes.UPLOAD,
-        label: '姓名123', // 默认等于key,
+        label: '姓名1234', // 默认等于key,
         // labelStyle: {},
         widgetConfig: {
           // options: [{ value: 1, text: '哈哈哈' }],
@@ -103,6 +104,7 @@ const config: ISuperTableConfig<{
       }
     },
   ],
+  headerResizable: true,
   // addDBtn: undefined || true || {
   //   style: {},
   // },
@@ -118,10 +120,10 @@ const config: ISuperTableConfig<{
   // searchSorter: [] || (searchFields) => {
 
   // },
-  // columnsSorter: [] || (colums) => {
+  // columnsOrder: [] || (colums) => {
 
   // },
-  // formFieldsSorter: [] || (formFields) => {
+  // formFieldsOrder: [] || (formFields) => {
 
   // },
   // formFieldsGroups: [{

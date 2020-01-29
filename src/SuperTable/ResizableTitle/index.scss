@@ -1,0 +1,65 @@
+// .resizable-container {
+//   position: relative;
+// }
+
+// .resizable-handler {
+//   width: 10px;
+//   height: 100%;
+//   position: absolute;
+//   right: 0;
+//   top: 0;
+//   background: red;
+// }
+
+.react-resizable {
+  position: relative;
+  background-clip: padding-box;
+}
+
+.react-resizable-handle {
+  position: absolute;
+  width: 10px;
+  height: 100%;
+  bottom: 0;
+  right: -5px;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.react-draggable,
+.cursor {
+  cursor: move;
+}
+
+.no-cursor {
+  cursor: auto;
+}
+
+.cursor-y {
+  cursor: ns-resize;
+}
+
+.cursor-x {
+  cursor: ew-resize;
+}
+
+.react-draggable strong {
+  background: #ddd;
+  border: 1px solid #999;
+  border-radius: 3px;
+  display: block;
+  margin-bottom: 10px;
+  padding: 3px 5px;
+  text-align: center;
+}
+
+.box {
+  background: #fff;
+  border: 1px solid #999;
+  border-radius: 3px;
+  width: 180px;
+  height: 180px;
+  margin: 10px;
+  padding: 10px;
+  float: left;
+}

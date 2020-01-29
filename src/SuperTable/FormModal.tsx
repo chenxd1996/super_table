@@ -17,6 +17,7 @@ export interface IFormModalProps {
   onOk?: (values: FormValues) => void;
   onCancel?: () => void;
   mode: FormModalModes;
+  formFieldsOrder?: Array<string>;
 }
 
 interface IStaticProperties {
@@ -42,6 +43,7 @@ export default (props: IFormModalProps) => {
     cancelBtnProps,
     onOk,
     onCancel,
+    formFieldsOrder,
   } = props;
 
 
@@ -73,6 +75,8 @@ export default (props: IFormModalProps) => {
       <SuperForm
         fieldItems={formItems}
         onChange={handleChange}
+        layout="inline"
+        formFieldsOrder={formFieldsOrder}
       />
     </Modal>
   );

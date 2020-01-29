@@ -54,12 +54,12 @@ export interface IWidgetProps {
   [WidgetTypes.SWITCH]: SwitchProps & DefaultWidgetProps;
   [WidgetTypes.RATE]: RateProps & DefaultWidgetProps;
   [WidgetTypes.SELECT]: ISelectProps & DefaultWidgetProps;
-  [WidgetTypes.DATETIMEPICKER]: IDateProps;
+  [WidgetTypes.DATETIMEPICKER]: IDateProps &  DefaultWidgetProps;
   [WidgetTypes.CHECKBOX]: CheckboxGroupProps & DefaultWidgetProps;
   [WidgetTypes.ARRAY]: IArrayRendererProps & DefaultWidgetProps;
-  [WidgetTypes.OBJECT]: DefaultWidgetProps;
+  [WidgetTypes.OBJECT]: DefaultWidgetProps & DefaultWidgetProps;
   [WidgetTypes.UPLOAD]: IUploadRenerProps & DefaultWidgetProps;
-  [WidgetTypes.RICHTEXT]: DefaultWidgetProps;
+  [WidgetTypes.RICHTEXT]: DefaultWidgetProps & DefaultWidgetProps;
   [WidgetTypes.RADIO]: RadioGroupProps & DefaultWidgetProps;
   [WidgetTypes.SLIDER]: SliderProps & DefaultWidgetProps;
   [WidgetTypes.CASCADER]: CascaderProps & DefaultWidgetProps;

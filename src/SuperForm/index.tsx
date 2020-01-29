@@ -1,4 +1,4 @@
-import React, { ComponentClass, ReactElement, ReactNode } from 'react';
+import React, { ComponentClass, ReactElement } from 'react';
 import { Form } from 'antd';
 import memorize from 'memoize-one';
 import { FormComponentProps, FormItemProps } from 'antd/lib/form';
@@ -23,9 +23,11 @@ import {
 import { getWidget } from './widgets';
 import ArrayWrapper from './ArrayWrapper';
 import WidgetWrapper from './WidgetWrapper';
+import { sortArrByOrder } from '../common';
 
 interface IFormPropsAppend {
   fieldItems: Array<IFormItemConfig>;
+  formFieldsOrder?: Array<string>;
   initialValues?: FormValues;
   onChange?: OnFormChange;
 }
@@ -157,8 +159,9 @@ const renderFormItem = memorize((
         } else if (isObjectType) {
           // 这种情况是Object的情况
           const childrenCopy = children.map((child) => {
-            const fullKey = `${key}.${child.key}`;
             const fullDataIndex = `${dataIndex}.${child.dataIndex}`;
+            const { key: childKey } = child;
+            const fullKey = childKey || fullDataIndex;
             return {
               ...child,
               key: fullKey,
@@ -303,11 +306,15 @@ class SuperForm extends React.Component<IFormProps> {
       initialValues = {},
       children,
       onChange,
+      formFieldsOrder,
       ...other
     } = this.props;
     const { getFieldDecorator } = form!;
     const wrappedGetFieldDecorator = this.wrapGetFieldDecorator(getFieldDecorator);
     const currentValues = this.getCurrentValues(initialValues);
+    if (formFieldsOrder) {
+      sortArrByOrder(fieldItems, 'key', formFieldsOrder);
+    }
     return (
       <Form
         {...other}

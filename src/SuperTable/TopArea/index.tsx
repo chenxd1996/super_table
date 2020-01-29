@@ -29,6 +29,8 @@ interface ITopAreaProps<RecordType> {
   resetBtnProps?: ButtonProps;
   setFilters: (filters: Filter<RecordType>) => void;
   headerWidgets?: HeaderWidgets;
+  searchFieldsOrder?: Array<string>;
+  showSelection?: boolean;
 }
 
 const DEFAULT_SEARCH_BTN_TEXT = '查询';
@@ -61,6 +63,8 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
     resetBtnText = DEFAULT_RESET_BTN_TEXT,
     resetBtnProps,
     headerWidgets,
+    searchFieldsOrder,
+    showSelection,
   } = props;
 
   const handleSearch = useCallback(() => {
@@ -126,7 +130,7 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
   }, [addBtnProps, addBtnText, handleCreate, showAddBtn]);
 
   const getDeleteBtn = useCallback(() => {
-    if (!showDeleteBtn) {
+    if (!showDeleteBtn || !showSelection) {
       return null;
     }
     return (
@@ -137,10 +141,10 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
         onClick={handleDelete}
       >{deleteBtnText}</Button>
     )
-  }, [deleteBtnProps, deleteBtnText, handleDelete, selectedRows.length, showDeleteBtn]);
+  }, [deleteBtnProps, deleteBtnText, handleDelete, selectedRows.length, showDeleteBtn, showSelection]);
 
   const getEditBtn = useCallback(() => {
-    if (!showEditBtn) {
+    if (!showEditBtn || !showSelection) {
       return null;
     }
     return (
@@ -151,7 +155,7 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
         onClick={handleEdit}
       >{editBtnText}</Button>
     )
-  }, [editBtnProps, editBtnText, handleEdit, selectedRows, showEditBtn]);
+  }, [editBtnProps, editBtnText, handleEdit, selectedRows.length, showEditBtn, showSelection]);
 
   const handleFormChange = useCallback((values) => {
     setFilters(values);
@@ -197,14 +201,9 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
     <div className="top-area-container">
       <SuperForm
         fieldItems={searchItems}
-        // labelCol={{
-        //   span: 2,
-        // }}
-        // wrapperCol={{
-        //   span: 3,
-        // }}
         onChange={handleFormChange}
         layout="inline"
+        formFieldsOrder={searchFieldsOrder}
       >
         {
           widgets

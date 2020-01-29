@@ -2,6 +2,7 @@ import { ReactElement, ReactNode } from 'react';
 import { ColumnProps, TableProps, SortOrder } from "antd/lib/table";
 import { IFormItemConfig } from "../SuperForm/type";
 import  { ButtonProps } from "antd/lib/button";
+import { ResizeCallbackData } from 'react-resizable';
 
 export interface IMapperConfig {
   mapper: string,
@@ -15,7 +16,8 @@ interface ColumnAppendProps<RecordType> {
     record: RecordType,
     index: number,
     methods?: RowOperationMethods
-  ) => ReactNode; 
+  ) => ReactNode;
+  itemIndex?: number; 
 }
 
 
@@ -28,7 +30,9 @@ export enum SearchPlaces {
 }
 
 export type SearchItemConfig = Pick<IFormItemConfig, Exclude<keyof IFormItemConfig,
-  'inputAdaptor' | 'outputAdaptor' | 'mode' | 'getFieldDecoratorOptions'>>;
+  'inputAdaptor' | 'outputAdaptor' | 'mode' | 'getFieldDecoratorOptions' | 'children'>> & {
+    children?: Array<SearchItemConfig>;
+  };
 
 export interface ISearch {
   config?: SearchItemConfig;
@@ -41,6 +45,7 @@ export interface IFieldConfig<RecordType> {
   column?: ColumnConfig<RecordType>;
   formItem?: IFormItemConfig;
   search?: ISearch;
+  children?: Array<IFieldConfig<RecordType>>;
 }
 
 interface RowOperationMethods {
@@ -102,11 +107,12 @@ export type ISuperTableConfig<RecordType> = {
   searchBtnProps?: ButtonProps;
   resetBtnText?: string;
   resetBtnProps?: ButtonProps;
-  header?: Function;
-  body?: Function;
+  wrapTopArea?: (topArea: ReactElement) => ReactElement;
+  wrapTableArea?: (table: ReactElement) => ReactElement;
   headerWidgets?: HeaderWidgets;
-  columnsSorter?: Function;
-  formFieldsSorter?: Function;
+  columnsOrder?: Array<string>;
+  formFieldsOrder?: Array<string>;
+  searchFieldsOrder?: Array<string>;
   formModalTitle?: string | ReactNode;
   // formModalFooter?: null | Function;
   formModalOkText?: string;
@@ -153,3 +159,6 @@ export enum FormModalModes {
   ADD = 'add',
   EDIT = 'edit',
 };
+
+// export type OnResize = (width: number) => void;
+export type OnResize = ((e: React.SyntheticEvent<Element, Event>, data: ResizeCallbackData) => any);

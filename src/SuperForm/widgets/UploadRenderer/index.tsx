@@ -5,6 +5,7 @@ import { UploadFile, UploadChangeParam } from 'antd/lib/upload/interface';
 import { OnChange } from '../../type';
 import { ButtonProps } from 'antd/lib/button';
 import { IconProps } from 'antd/lib/icon';
+import './index.scss';
 
 const { Dragger } = Upload;
 
@@ -56,7 +57,7 @@ export default React.memo((props: IUploadRenerProps) => {
         >
           <Button {...buttonProps} >
             <Icon type="upload" {...iconProps} />
-            {uploadText || DEFAULT_UPLOAD_TEXT}
+            <span className="upload-text">{uploadText || DEFAULT_UPLOAD_TEXT}</span>
           </Button>
         </Upload>
       )
@@ -70,7 +71,7 @@ export default React.memo((props: IUploadRenerProps) => {
           <p className="ant-upload-drag-icon">
             <Icon type="inbox" {...iconProps} />
           </p>
-          <p className="ant-upload-text">{uploadText || DEFAULT_DRAG_TEXT}</p>
+          <p className="upload-text">{uploadText || DEFAULT_DRAG_TEXT}</p>
         </Dragger>
       )
     default:
