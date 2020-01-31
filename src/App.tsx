@@ -1,7 +1,7 @@
 import React from 'react';
 import SuperTable from "./SuperTable";
 import { WidgetTypes, FormModes } from './SuperForm/type';
-import { UploaderModes } from './SuperForm/widgets/UploadRenderer';
+import { UploaderModes } from './SuperForm/widgets/Upload';
 import { ISuperTableConfig } from './SuperTable/type';
 
 const config: ISuperTableConfig<{

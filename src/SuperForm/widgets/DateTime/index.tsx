@@ -6,12 +6,14 @@ import moment from 'moment';
 
 const { RangePicker, MonthPicker, WeekPicker } = DatePicker;
 
-enum DateModes {
-  Second = 'Second',
-  MillionSecond = 'MillionSecond',
-}
+const timestampTypes = {
+  second: 'second',
+  millionsecond: 'millionsecond',
+};
 
-enum DateTypes {
+type TimestampType = keyof typeof timestampTypes;
+
+enum DateModes {
   Date = 'Date',
   Month = 'Month',
   Week = 'Week',
@@ -20,35 +22,41 @@ enum DateTypes {
 }
 
 interface IPickersProps {
-  [DateTypes.Date]: DatePickerProps,
-  [DateTypes.Month]: MonthPickerProps,
-  [DateTypes.Week]: WeekPickerProps,
-  [DateTypes.Range]: RangePickerProps,
-  [DateTypes.Time]: TimePickerProps,
+  [DateModes.Date]: DatePickerProps,
+  [DateModes.Month]: MonthPickerProps,
+  [DateModes.Week]: WeekPickerProps,
+  [DateModes.Range]: RangePickerProps,
+  [DateModes.Time]: TimePickerProps,
 }
 
 type RangeValues = [number?, number?];
 
-export type IDateProps = IPickersProps[DateTypes] & {
-  dateType: DateTypes,
-  mode: DateModes,
+export type IDateProps = IPickersProps[DateModes] & {
+  mode?: DateModes,
+  timestampType?: TimestampType,
   value: number | RangeValues,
   onChange: (value: number | RangeValues) => {}
 };
 
 export default React.memo((props: IDateProps) => {
-  const { dateType, mode, value, onChange, ...other } = props;
+  const {
+    mode = DateModes.Date,
+    timestampType = timestampTypes.millionsecond,
+    value,
+    onChange,
+    ...other
+  } = props;
   
   // antd的日期组件输入输出都是momonet
   const getMomentValue = useCallback((rawValue?: number) => {
     if (rawValue === undefined) {
       return rawValue;
     }
-    if (typeof rawValue === 'number' && mode === DateModes.Second) {
+    if (typeof rawValue === 'number' && timestampType === timestampTypes.second) {
       rawValue = rawValue * 1000;
     }
     return moment(new Date(rawValue));
-  }, [mode]);
+  }, [timestampType]);
 
   const getMomentValues = useCallback((rawValues: RangeValues) => {
     return rawValues.map((rawValue) => getMomentValue(rawValue)) as RangePickerProps['value'];
@@ -56,27 +64,27 @@ export default React.memo((props: IDateProps) => {
 
   const formatValue = useCallback((momentValue: moment.Moment) => {
     const unixTimeStamp = momentValue.unix();
-    if (mode === DateModes.Second) {
+    if (timestampType === timestampTypes.second) {
       return unixTimeStamp;
     }
     return unixTimeStamp *  1000;
-  }, [mode]);
+  }, [timestampType]);
 
   const formatValues = useCallback((momentValues: [moment.Moment, moment.Moment]) => {
     return momentValues.map((momentValue) => formatValue(momentValue)) as RangeValues;
   }, [formatValue])
 
   const handleChange = useCallback((value) => {
-    if (dateType === DateTypes.Range) {
+    if (mode === DateModes.Range) {
       onChange(formatValues(value));
     } else {
       onChange(formatValue(value));
     }
-  }, [dateType, onChange, formatValues, formatValue]);
+  }, [mode, onChange, formatValues, formatValue]);
 
   const renderFunc = useCallback(() => {
-    switch (dateType) {
-      case DateTypes.Date: {
+    switch (mode) {
+      case DateModes.Date: {
         const momentValue = getMomentValue(value as number);
         return (
           <DatePicker
@@ -86,7 +94,7 @@ export default React.memo((props: IDateProps) => {
           />
         );
       }
-      case DateTypes.Month: {
+      case DateModes.Month: {
         const momentValue = getMomentValue(value as number);
         return (
           <MonthPicker
@@ -96,7 +104,7 @@ export default React.memo((props: IDateProps) => {
           />
         )
       }
-      case DateTypes.Week: {
+      case DateModes.Week: {
         const momentValue = getMomentValue(value as number);
         return (
           <WeekPicker
@@ -106,7 +114,7 @@ export default React.memo((props: IDateProps) => {
           />
         )
       }
-      case DateTypes.Range: {
+      case DateModes.Range: {
         const monmentValues = getMomentValues(value as RangeValues);
         return (
           <RangePicker
@@ -119,7 +127,7 @@ export default React.memo((props: IDateProps) => {
       default:
         return null;
     }
-  }, [dateType, getMomentValue, getMomentValues, handleChange, other, value]);
+  }, [mode, getMomentValue, getMomentValues, handleChange, other, value]);
 
   return renderFunc();
 });

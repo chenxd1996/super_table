@@ -1,28 +1,26 @@
 import React, { ReactElement, Component } from 'react';
 import { Table } from 'antd';
 import {
-  ISuperTableConfig, ColumnConfig, RowOperations, Pagination, Filter, Sorter, SearchItemConfig, ISearch, FormModalModes, RecordPart, DeleteRecord, OpenEditModal, IFieldConfig, FetchData, OpenCreateModal, OnResize } from "./type";
+  ISuperTableConfig, ColumnConfig, RowActions, Pagination, Filter, Sorter, SearchItemConfig, ISearch, FormModalModes, RecordPart, DeleteRecord, OpenEditModal, IFieldConfig, FetchData, OpenCreateModal, OnResize, IMapperConfig } from "./type";
 import { ColumnProps, TableRowSelection, TableComponents, SortOrder } from 'antd/lib/table';
 import Button from 'antd/lib/button';
 import { IFormItemConfig, FormValues, WidgetTypes } from '../SuperForm/type';
-import { isFunction, isBoolean, sortArrByOrder } from '../common';
+import { isFunction, isBoolean, sortArrByOrder, addKeyToArrayElements } from '../common';
 import TopArea from './TopArea';
 import FormModal from './FormModal';
 import memoizeOne from 'memoize-one';
 import { ResizableTitle } from './ResizableTitle';
+import getRenderFunc from './columnRenderers';
 
-const getRenderFunc = () => {
-  return (text: string, record: any, index: number) => {
-    return (<span>我日----</span>);
-  }
-}
-
-const parseColumn = <RecordType extends {}>(column?: ColumnConfig<RecordType>) => {
+const parseColumn = <RecordType extends {}>(
+  column?: ColumnConfig<RecordType>,
+  formWidgetConfig?: IFormItemConfig['widgetConfig'],
+) => {
   if (!column) { return; }
   const { render, map, ...other } = column;
   let renderFunc = render;
-  if (map && map.mapper) {
-    // renderFunc = getRenderFunc();
+  if (map && map.type) {
+    renderFunc = getRenderFunc(map, formWidgetConfig);
   }
   return {
     render: renderFunc,
@@ -30,11 +28,11 @@ const parseColumn = <RecordType extends {}>(column?: ColumnConfig<RecordType>) =
   }
 }
 
-const addRowOperations = <RecordType extends {}>(
+const addRowActions = <RecordType extends {}>(
   columns: Array<ColumnConfig<RecordType>>,
   openEditModal: OpenEditModal<RecordType>,
   deleteRecord: DeleteRecord<RecordType>,
-  rowOperations?: RowOperations<RecordType>,
+  rowActions?: RowActions<RecordType>,
 ) => {
   const DEFAULT_EDIT_BUTTON_PROPS = {
     type: 'link',
@@ -63,11 +61,11 @@ const addRowOperations = <RecordType extends {}>(
     editBtnProps = DEFAULT_EDIT_BUTTON_PROPS,
     deleteBtn = true,
     deleteBtnProps = DEFAULT_DELETE_BUTTON_PROPS,
-    render,
     key = DEFAULT_ACTION_KEY,
     title = DEFAULT_ACTION_TITLE,
+    getActions,
     ...other
-  } = rowOperations || {};
+  } = rowActions || {};
 
   const getDefaultButton = (
     showBtn: boolean | Function,
@@ -93,13 +91,16 @@ const addRowOperations = <RecordType extends {}>(
     getDefaultButton(deleteBtn, deleteBtnProps, DEFAULT_DELETE_BUTTON_TEXT);
 
   
-  const operations: Array<ReactElement> = [editBtnElement, deleteBtnElement];
+  const actions: Array<ReactElement> = [editBtnElement, deleteBtnElement];
     
   const wrappedRender: ColumnProps<RecordType>['render'] = (text, record, index) => {
-    if (typeof render === 'function') {
-      return render(operations, record, text);
+    if (isFunction(getActions)) {
+      actions.push(...getActions(
+        { text, record, index },
+        { deleteRecord, openEditModal }
+      ));
     }
-    return operations;
+    return addKeyToArrayElements(actions);
   };
 
   const actionColumn =  {
@@ -173,7 +174,7 @@ const getFullDataKeyColumn = <RecordType extends {}>(
 
 const parseTableConfig = memoizeOne(<RecordType extends {}>(
   fields: IFieldConfig<RecordType>[],
-  rowOperations: RowOperations<RecordType> | undefined,
+  rowActions: RowActions<RecordType> | undefined,
   openEditModal: OpenEditModal<RecordType>,
   deleteRecord: DeleteRecord<RecordType>,
   columnsOrder?: Array<string>,
@@ -199,9 +200,9 @@ const parseTableConfig = memoizeOne(<RecordType extends {}>(
       columns: childrenColumns,
       formItems: childrenFormItems,
       searchItems: childrenSearchItems,
-    } = parseTableConfig(children, rowOperations, openEditModal, deleteRecord);
+    } = parseTableConfig(children, rowActions, openEditModal, deleteRecord);
 
-    const parsedColumn = parseColumn({ ...column, key, dataIndex });
+    const parsedColumn = parseColumn({ ...column, key, dataIndex }, formItem?.widgetConfig);
     if (parsedColumn) {
       columns.push(parsedColumn);
       const {
@@ -221,7 +222,7 @@ const parseTableConfig = memoizeOne(<RecordType extends {}>(
       }
     }
 
-    columns = addRowOperations(columns, openEditModal, deleteRecord, rowOperations);
+    columns = addRowActions(columns, openEditModal, deleteRecord, rowActions);
 
     columns.push(...childrenColumns.map((childColumn) => {
       return getFullDataKeyColumn(childColumn, dataIndex);
@@ -293,9 +294,9 @@ const getDefaultSelectedRowKeys = <RecordType extends {}>(rowSelection?: TableRo
 const getDefaultSelectedRows = <RecordType extends {
   [field: string]: any;
 }>(
-  rowSelection?: TableRowSelection<RecordType>,
-  dataSource?: Array<RecordType>,
-  rowKey?: string | ((record: RecordType) => string),
+  rowSelection: TableRowSelection<RecordType> | undefined,
+  dataSource: Array<RecordType> | undefined,
+  rowKey: string | ((record: RecordType, index: number) => string) | undefined,
 ) => {
   if (!rowSelection) {
     return [];
@@ -306,8 +307,8 @@ const getDefaultSelectedRows = <RecordType extends {
     const keyValuesMap: {
       [field: string]: RecordType;
     } = {};
-    dataSource?.forEach((record) => {
-      const key = isFunction(rowKey) ? rowKey(record) : rowKey;
+    dataSource?.forEach((record, index) => {
+      const key = isFunction(rowKey) ? rowKey(record, index) : rowKey;
       keyValuesMap[key] = record;
       return record[key];
     });
@@ -343,18 +344,20 @@ export default class SuperTable<RecordType extends {
     super(props);
     const {
       fields,
-      rowOperations,
+      rowActions,
       pagination,
       rowSelection,
       columnsOrder,
+      dataSource,
+      rowKey,
     } = props;
 
     const {
       defaultOutterFilters, defaultInnerFilters,
-    } = parseTableConfig(fields, rowOperations, this.openEditModal, this.deleteRecord, columnsOrder);
+    } = parseTableConfig(fields, rowActions, this.openEditModal, this.deleteRecord, columnsOrder);
     const defaultPagination = getDefaultPagination(pagination);
     const defaultSelectedRowKeys = getDefaultSelectedRowKeys(rowSelection);
-    const defaultSelectedRows = getDefaultSelectedRows(rowSelection);
+    const defaultSelectedRows = getDefaultSelectedRows(rowSelection, dataSource, rowKey);
 
     this.state = {
       sorter: undefined,
@@ -615,7 +618,6 @@ export default class SuperTable<RecordType extends {
 
   render() {
     const {
-      dataSource,
       pagination,
       onChange,
       onDelete,
@@ -646,14 +648,14 @@ export default class SuperTable<RecordType extends {
       searchBtnText,
       resetBtnText,
       resetBtnProps,
-      rowOperations,
+      rowActions,
       fields,
       headerWidgets,
       headerResizable,
       wrapTableArea,
       wrapTopArea,
       showColumnConfig,
-      showSelection,
+      showSelection = true,
       columnsOrder,
       formFieldsOrder,
       searchFieldsOrder,
@@ -666,7 +668,7 @@ export default class SuperTable<RecordType extends {
       searchItems,
     } = parseTableConfig(
       fields,
-      rowOperations,
+      rowActions,
       this.openEditModal,
       this.deleteRecord,
       columnsOrder,

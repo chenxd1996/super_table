@@ -38,7 +38,8 @@ export default React.forwardRef((props: IWidgetWrapperProps, ref) => {
   const originalProps = elementToWrap.props;
 
   const handleChange = useCallback((event: any) => {
-    const value = (event && event.target && event.target.value) || event;
+    const { target = {} } = event;
+    const value = (target && (target.value || target.checked)) || event;
     if (originalProps.onChange) {
       originalProps.onChange(event);
     }

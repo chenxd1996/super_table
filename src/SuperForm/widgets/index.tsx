@@ -6,18 +6,15 @@ import {
   Rate,
   Slider,
   Cascader,
-  Radio,
-  Checkbox,
 } from 'antd';
 
-import DateTimePicker from './DateTimeRenderer';
-import Select from './SelectRenderer';
-import ArrayRenderer from './ArrayRenderer';
-import UploadRenderer from './UploadRenderer';
+import DateTimePicker from './DateTime';
+import SelectRenderer from './Select';
+import ArrayRenderer from './Array';
+import UploadRenderer from './Upload';
+import RadioRenderer from './Radio';
+import CheckbocRenderer from './Checkbox';
 import { WidgetTypes, ComponentType } from '../type';
-
-const RadioGroup = Radio.Group;
-const CheckboxGroup = Checkbox.Group;
 
 // todo: RICHTEXT
 export const widgetsMap = {
@@ -26,14 +23,14 @@ export const widgetsMap = {
   [WidgetTypes.TREESELECT]: TreeSelect,
   [WidgetTypes.SWITCH]: Switch,
   [WidgetTypes.RATE]: Rate,
-  [WidgetTypes.SELECT]: Select,
+  [WidgetTypes.SELECT]: SelectRenderer,
   [WidgetTypes.DATETIMEPICKER]: DateTimePicker,
-  [WidgetTypes.CHECKBOX]: CheckboxGroup,
+  [WidgetTypes.CHECKBOX]: CheckbocRenderer,
   [WidgetTypes.ARRAY]: ArrayRenderer,
   [WidgetTypes.OBJECT]: null,
   [WidgetTypes.UPLOAD]: UploadRenderer,
   [WidgetTypes.RICHTEXT]: Input,
-  [WidgetTypes.RADIO]: RadioGroup,
+  [WidgetTypes.RADIO]: RadioRenderer,
   [WidgetTypes.SLIDER]: Slider,
   [WidgetTypes.CASCADER]: Cascader,
 }

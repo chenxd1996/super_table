@@ -3,16 +3,18 @@ import { ColumnProps, TableProps, SortOrder } from "antd/lib/table";
 import { IFormItemConfig } from "../SuperForm/type";
 import  { ButtonProps } from "antd/lib/button";
 import { ResizeCallbackData } from 'react-resizable';
+import { ColumnRendererConfig, ColumnRendererType } from './columnRenderers';
 
 export interface IMapperConfig {
-  mapper: string,
+  type: ColumnRendererType,
+  config: ColumnRendererConfig,
   // config: Object,
 }
 
 interface ColumnAppendProps<RecordType> {
   map?: IMapperConfig;
   render?: (
-    defaultElements: ReactElement | Array<ReactElement>,
+    text: string,
     record: RecordType,
     index: number,
     methods?: RowOperationMethods
@@ -54,7 +56,7 @@ interface RowOperationMethods {
   deleteData: () => void;
 }
 
-type RowOperationsAppend = {
+type RowActionsAppend<RecordType> = {
   editBtn?: boolean | ((
     setEditStatus: RowOperationMethods['setEditStatus'],
     saveEditValues: RowOperationMethods['saveEditValues'],
@@ -65,8 +67,15 @@ type RowOperationsAppend = {
     deleteData: RowOperationMethods['deleteData'],
     rowData: any) => ReactElement);
   deleteBtnProps?: ButtonProps;
+  getActions?: (
+    data: { text: string, record: RecordType, index: number },
+    actions: {
+      openEditModal: OpenEditModal<RecordType>;
+      deleteRecord: DeleteRecord<RecordType>;
+    }
+  ) => Array<ReactElement>;
 }
-export type RowOperations<RecordType> = RowOperationsAppend & ColumnConfig<RecordType>;
+export type RowActions<RecordType> = RowActionsAppend<RecordType> & ColumnConfig<RecordType>;
 
 export type OnOpenModal = <RecordType>(
   values: RecordPart<RecordType>,
@@ -137,7 +146,7 @@ export type ISuperTableConfig<RecordType> = {
   onOpenModal?: OnOpenModal;
   onSaveData?: OnSaveData;
   onDelete?: OnDelete;
-  rowOperations?: RowOperations<RecordType>;
+  rowActions?: RowActions<RecordType>;
 } & TableProps<RecordType>;
 
 export interface Pagination {
