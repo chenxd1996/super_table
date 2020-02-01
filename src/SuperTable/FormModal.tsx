@@ -1,10 +1,9 @@
 import React, { ReactNode, useCallback, useRef } from 'react';
 import SuperForm from '../SuperForm';
-import { IFormItemConfig, FormValues, } from '../SuperForm/type';
+import { IFormItemConfig, FormValues, FormModes, } from '../SuperForm/type';
 import { Modal } from 'antd';
 import { ButtonProps } from 'antd/lib/button';
 import { isFunction } from '../common';
-import { FormModalModes } from './type';
 
 export interface IFormModalProps {
   formItems: Array<IFormItemConfig>;
@@ -16,7 +15,7 @@ export interface IFormModalProps {
   cancelBtnProps?: ButtonProps;
   onOk?: (values: FormValues) => void;
   onCancel?: () => void;
-  mode: FormModalModes;
+  mode: FormModes;
   formFieldsOrder?: Array<string>;
 }
 
@@ -31,7 +30,7 @@ const DEFAULT_CANCAL_TEXT = '取消';
 
 export default (props: IFormModalProps) => {
   
-  const defaultTitle = props.mode === FormModalModes.ADD ? DEFAULT_CREATE_TITLE : DEFAULT_EDIT_TITLE;
+  const defaultTitle = props.mode === FormModes.ADD ? DEFAULT_CREATE_TITLE : DEFAULT_EDIT_TITLE;
 
   const {
     formItems,

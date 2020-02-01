@@ -1,11 +1,14 @@
 import React, { ReactElement, Component } from 'react';
 import { Table } from 'antd';
 import {
-  ISuperTableConfig, ColumnConfig, RowActions, Pagination, Filter, Sorter, SearchItemConfig, ISearch, FormModalModes, RecordPart, DeleteRecord, OpenEditModal, IFieldConfig, FetchData, OpenCreateModal, OnResize, IMapperConfig } from "./type";
+  ISuperTableConfig, ColumnConfig, RowActions, Pagination, Filter, Sorter, SearchItemConfig,
+  ISearch, RecordPart, DeleteRecord, OpenEditModal, IFieldConfig, FetchData,
+  OpenCreateModal, OnResize, WrapOpenEditModal, WrapDeleteRecord,
+} from "./type";
 import { ColumnProps, TableRowSelection, TableComponents, SortOrder } from 'antd/lib/table';
 import Button from 'antd/lib/button';
-import { IFormItemConfig, FormValues, WidgetTypes } from '../SuperForm/type';
-import { isFunction, isBoolean, sortArrByOrder, addKeyToArrayElements } from '../common';
+import { IFormItemConfig, FormValues, WidgetTypes, FormModes } from '../SuperForm/type';
+import { isFunction, isBoolean, sortArrByOrder, addKeyToArrayElements, showConfirm } from '../common';
 import TopArea from './TopArea';
 import FormModal from './FormModal';
 import memoizeOne from 'memoize-one';
@@ -34,27 +37,25 @@ const addRowActions = <RecordType extends {}>(
   deleteRecord: DeleteRecord<RecordType>,
   rowActions?: RowActions<RecordType>,
 ) => {
+  const DEFAULT_EDIT_BUTTON_TEXT = '编辑';
+  
+  const DEFAULT_DELETE_BUTTON_TEXT = '删除';
+
+  const DEFAULT_ACTION_KEY = '$action';
+
+  const DEFAULT_ACTION_TITLE = '操作';
+
   const DEFAULT_EDIT_BUTTON_PROPS = {
     type: 'link',
     size: 'small',
     key: '$edit-button',
-    onClick: openEditModal,
   };
 
   const DEFAULT_DELETE_BUTTON_PROPS = {
     type: 'link',
     size: 'small',
     key: '$delete-button',
-    onClick: deleteRecord,
   };
-
-  const DEFAULT_EDIT_BUTTON_TEXT = '编辑';
-
-  const DEFAULT_DELETE_BUTTON_TEXT = '删除';
-
-  const DEFAULT_ACTION_KEY = '$action';
-
-  const DEFAULT_ACTION_TITLE = '操作';
 
   const { 
     editBtn = true,
@@ -67,53 +68,74 @@ const addRowActions = <RecordType extends {}>(
     ...other
   } = rowActions || {};
 
-  const getDefaultButton = (
-    showBtn: boolean | Function,
-    buttonProps: Object,
-    defaultText: string,
+
+  const getDefaultActions = (
+    wrapOpenEditModal: WrapOpenEditModal,
+    wrapDeleteRecord: WrapDeleteRecord,
   ) => {
-    return showBtn ? (<Button {...buttonProps}>{defaultText}</Button>) : null;
-  }
+    const actions: Array<ReactElement> = [];
 
-  const getCustomButton = (
-    customButton: boolean | Function,
-    args: Array<any>,
-  ) => {
-    return typeof customButton === 'function' ? customButton(...args) : null;
-  }
-
-  const editBtnElement =
-    getCustomButton(editBtn, [openEditModal]) ||
-    getDefaultButton(editBtn, editBtnProps, DEFAULT_EDIT_BUTTON_TEXT);
-
-  const deleteBtnElement =
-    getCustomButton(deleteBtn, [deleteRecord]) ||
-    getDefaultButton(deleteBtn, deleteBtnProps, DEFAULT_DELETE_BUTTON_TEXT);
-
-  
-  const actions: Array<ReactElement> = [editBtnElement, deleteBtnElement];
-    
-  const wrappedRender: ColumnProps<RecordType>['render'] = (text, record, index) => {
-    if (isFunction(getActions)) {
-      actions.push(...getActions(
-        { text, record, index },
-        { deleteRecord, openEditModal }
-      ));
+    const getDefaultButton = (
+      showBtn: boolean | Function,
+      buttonProps: Object,
+      defaultText: string,
+    ) => {
+      return showBtn ? (<Button {...buttonProps}>{defaultText}</Button>) : null;
     }
-    return addKeyToArrayElements(actions);
-  };
+  
+    const getCustomButton = (
+      customButton: boolean | Function,
+      args: Array<any>,
+    ) => {
+      return typeof customButton === 'function' ? customButton(...args) : null;
+    }
+  
+  
+    if (editBtn) {
+      const editBtnElement =
+        getCustomButton(editBtn, [openEditModal]) ||
+        getDefaultButton(editBtn, { onClick: wrapOpenEditModal, ...editBtnProps }, DEFAULT_EDIT_BUTTON_TEXT);
+      actions.push(editBtnElement);
+    }
+  
+    if (editBtn) {
+      const deleteBtnElement =
+        getCustomButton(deleteBtn, [deleteRecord]) ||
+        getDefaultButton(deleteBtn, { onClick: wrapDeleteRecord, ...deleteBtnProps }, DEFAULT_DELETE_BUTTON_TEXT);
+      actions.push(deleteBtnElement);
+    }
 
-  const actionColumn =  {
-    render: wrappedRender,
-    title,
-    key,
-    ...other,
-  };
+    return actions;
+  }
 
-  return [
-    ...columns,
-    actionColumn,
-  ];
+  if (editBtn || deleteBtn || isFunction(getActions)) {
+    const wrappedRender: ColumnProps<RecordType>['render'] = (text, record, index) => {
+      const wrapOpenEditModal = () => openEditModal(record);
+      const wrapDeleteRecord = () => deleteRecord([record]);
+  
+      const actions = getDefaultActions(wrapOpenEditModal, wrapDeleteRecord);
+      if (isFunction(getActions)) {
+        actions.push(...getActions(
+          { text, record, index },
+          { deleteRecord: wrapDeleteRecord, openEditModal: wrapOpenEditModal }
+        ));
+      }
+      return addKeyToArrayElements(actions);
+    };
+  
+    const actionColumn =  {
+      render: wrappedRender,
+      title,
+      key,
+      ...other,
+    };
+  
+    return [
+      ...columns,
+      actionColumn,
+    ];
+  }
+  return columns;
 }
 
 const parseSearch = (search: boolean | ISearch,  key: string, dataIndex: string, formItem?: IFormItemConfig) => {
@@ -212,7 +234,11 @@ const parseTableConfig = memoizeOne(<RecordType extends {}>(
         sortOrder = defaultSortOrder,
         sortDirections = ['ascend', 'descend'],
       } = parsedColumn;
-      defaultInnerFilters[key as keyof Filter<RecordType>] = filteredValue;
+
+      if (filteredValue !== undefined) {
+        defaultInnerFilters[key as keyof Filter<RecordType>] = filteredValue;
+      }
+
       if (sortOrder) {
         defaultSorter = {
           field: dataIndex,
@@ -326,13 +352,14 @@ interface ISuperTableState<RecordType> {
   sorter?: Sorter;
   internalPagination: Pagination;
   modalVisible: boolean;
-  formModalMode: FormModalModes;
+  formModalMode: FormModes;
   formValues: RecordPart<RecordType>;
   selectedRowKeys: string[] | number[];
   selectedRows: Array<RecordType>;
   outterFilters: Filter<RecordType> | undefined;
   innerFilters: Filter<RecordType> | undefined;
   columnsWidth: ColumnsWidth;
+  loading: boolean;
 };
 
 export default class SuperTable<RecordType extends {
@@ -363,18 +390,19 @@ export default class SuperTable<RecordType extends {
       sorter: undefined,
       internalPagination: defaultPagination,
       modalVisible: false,
-      formModalMode: FormModalModes.ADD,
+      formModalMode: FormModes.ADD,
       formValues: {},
       selectedRowKeys: defaultSelectedRowKeys,
       selectedRows: defaultSelectedRows,
       outterFilters: defaultOutterFilters,
       innerFilters: defaultInnerFilters,
       columnsWidth: {},
+      loading: false,
     }
   }
 
   componentDidMount() {
-    const { fetchAtFirst  } = this.props;
+    const { fetchAtFirst = true } = this.props;
 
     if (fetchAtFirst && !this.hasFetch) {
       this.hasFetch = true;
@@ -382,7 +410,7 @@ export default class SuperTable<RecordType extends {
     }
   }
   
-  openModal = (mode: FormModalModes, values: RecordPart<RecordType>) => {
+  openModal = (mode: FormModes, values: RecordPart<RecordType>) => {
     this.setState({
       formModalMode: mode,
       formValues: values,
@@ -400,20 +428,20 @@ export default class SuperTable<RecordType extends {
     const { onOpenModal } = this.props;
     const data = {};
     if (isFunction(onOpenModal)) {
-      const ret = await onOpenModal({}, FormModalModes.ADD);
+      const ret = await onOpenModal({}, FormModes.ADD);
       Object.assign(data, ret);
     }
-    this.openModal(FormModalModes.ADD, { ...data });
+    this.openModal(FormModes.ADD, { ...data });
   }
 
   openEditModal: OpenEditModal<RecordType> = async (values) => {
     const { onOpenModal } = this.props;
     const data = values;
     if (isFunction(onOpenModal)) {
-      const ret = await onOpenModal(values, FormModalModes.EDIT);
+      const ret = await onOpenModal(values, FormModes.EDIT);
       Object.assign(data, ret);
     }
-    this.openModal(FormModalModes.EDIT, { ...data });
+    this.openModal(FormModes.EDIT, { ...data });
   }
 
   fetchData: FetchData = async (page = 0) => {
@@ -432,22 +460,47 @@ export default class SuperTable<RecordType extends {
       };
     }
     if (isFunction(onFetch)) {
-      const ret = await onFetch(newInternalPagination, {
-        ...innerFilters,
-        ...outterFilters,
-      }, sorter);
-      newInternalPagination = {
-        ...newInternalPagination,
-        ...ret,
-      };
+      this.setState({
+        loading: true,
+      });
+      try {
+        const ret = await onFetch(newInternalPagination, {
+          ...innerFilters,
+          ...outterFilters,
+        }, sorter);
+        newInternalPagination = {
+          ...newInternalPagination,
+          ...ret,
+        };
+      } finally {
+        this.setState({
+          loading: false,
+        });
+      }
     }
     this.setState({
       internalPagination: newInternalPagination,
     });
   };
 
-  deleteRecord: DeleteRecord<RecordType> = async (records) => {
-    const { onDelete, fetchAfterDelete } = this.props;
+  deleteRecord: DeleteRecord<RecordType> = async (records = []) => {
+    const DELETE_CONFIRM_TEXT = `确定要删除这${records.length}条记录吗？`;
+
+    const {
+      onDelete,
+      fetchAfterDelete = true,
+      showDeleteConfirm = true,
+    } = this.props;
+
+    let shouldDelete = true;
+    if (showDeleteConfirm) {
+      shouldDelete = await showConfirm(DELETE_CONFIRM_TEXT);
+    }
+
+    if (!shouldDelete) {
+      return;
+    }
+
     if (isFunction(onDelete)) {
       await onDelete(records);
     }
@@ -525,8 +578,8 @@ export default class SuperTable<RecordType extends {
   handleSaveData = async (values: FormValues) => {
     const {
       onSaveData,
-      fetchAfterCreate,
-      fetchAfterEdit,
+      fetchAfterCreate = true,
+      fetchAfterEdit = true,
     } = this.props;
 
     const {
@@ -538,8 +591,8 @@ export default class SuperTable<RecordType extends {
     }
     this.closeModal();
     if (
-      (formModalMode === FormModalModes.ADD && fetchAfterCreate)
-      || (formModalMode === FormModalModes.EDIT && fetchAfterEdit)  
+      (formModalMode === FormModes.ADD && fetchAfterCreate)
+      || (formModalMode === FormModes.EDIT && fetchAfterEdit)  
     ) {
       await this.fetchData(0);
     }
@@ -681,6 +734,7 @@ export default class SuperTable<RecordType extends {
       formModalMode,
       internalPagination,
       columnsWidth,
+      loading,
     } = this.state;
 
     let topArea = (
@@ -727,6 +781,7 @@ export default class SuperTable<RecordType extends {
         onChange={this.wrappedOnChange}
         rowKey={rowKey}
         rowSelection={this.getWrappedRowSelection()}
+        loading={loading}
       />
     );
 

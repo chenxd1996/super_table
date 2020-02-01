@@ -105,6 +105,9 @@ const config: ISuperTableConfig<{
     },
   ],
   headerResizable: true,
+  onFetch: (page, filter, sorter) => {
+    console.log('我日----', page, filter, sorter);
+  }
   // addDBtn: undefined || true || {
   //   style: {},
   // },

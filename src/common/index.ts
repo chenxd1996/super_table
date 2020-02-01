@@ -1,6 +1,7 @@
 import { ReactElement } from "react";
 import shortid from "shortid";
 import _get from 'lodash.get';
+import { Modal } from 'antd';
 
 export const isBoolean = (arg: any): arg is boolean => {
   return typeof arg === 'boolean';
@@ -79,4 +80,23 @@ export const fetchOptions = async (
     console.error('fetch options error:', e);
     throw e;
   }
+};
+
+export const showConfirm = (title: string, content?: string): Promise<boolean> => {
+  const { confirm } = Modal;
+
+  return new Promise((resolve) => {
+    confirm({
+      title,
+      content,
+      onOk() {
+        resolve(true);
+      },
+      onCancel() {
+        resolve(false);
+      },
+      okText: '确定',
+      cancelText: '取消',
+    });
+  });
 }

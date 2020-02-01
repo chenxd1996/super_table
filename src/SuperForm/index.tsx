@@ -19,6 +19,7 @@ import {
   GetFieldDecoratorWrapper,
   OnFormChange,
   OnFormChangeWrapper,
+  FormModes,
 } from './type';
 import { getWidget } from './widgets';
 import ArrayWrapper from './ArrayWrapper';
@@ -82,6 +83,7 @@ const renderFormItem = memorize((
   handleFormChange: OnFormChangeWrapper,
   initialValues: FormValues,
   currentValues: FormValues,
+  formMode?: FormModes,
 ): React.ReactNode => {
   return (
     fieldItems.map((fieldItem) => {
@@ -97,8 +99,12 @@ const renderFormItem = memorize((
         getFieldDecoratorOptions = { rules: [] },
         inputAdaptor,
         outputAdaptor,
+        mode,
       } = fieldItem;
 
+      if (formMode && mode && formMode !== mode) {
+        return null;
+      }
 
       let Widget = getWidget(type);
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import Button, { ButtonProps } from 'antd/lib/button';
 import shortId from 'shortid';
 import SuperForm from '../../SuperForm';
@@ -69,9 +69,12 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
 
   const handleSearch = useCallback(() => {
     return fetchData();
-  }, [fetchData])
+  }, [fetchData]);
+
+  const formRef = useRef<any>();
 
   const handleResetSearch = useCallback(() => {
+    formRef.current.resetFields();
     setFilters({});
     return fetchData();
   }, [fetchData, setFilters]);
@@ -195,7 +198,6 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
   }, [deleteRecord, fetchData, getAddBtn, getDeleteBtn, getEditBtn, getResetBtn, getSearchBtn, headerWidgets, openCreateModal, openEditModal, selectedRows]);
 
   const widgets = useMemo(getHeaderWidgets, [getHeaderWidgets]);
-
   
   return (
     <div className="top-area-container">
@@ -204,6 +206,7 @@ export default React.memo(<RecordType extends {}>(props: ITopAreaProps<RecordTyp
         onChange={handleFormChange}
         layout="inline"
         formFieldsOrder={searchFieldsOrder}
+        ref={formRef}
       >
         {
           widgets

@@ -5,14 +5,14 @@ import { InputNumberProps } from "antd/lib/input-number";
 import { TreeSelectProps } from "antd/lib/tree-select";
 import { SwitchProps } from "antd/lib/switch";
 import { RateProps } from "antd/lib/rate";
-import { IDateProps } from "./widgets/DateTimeRenderer";
-import { ISelectProps } from "./widgets/SelectRenderer";
-import { IArrayRendererProps } from './widgets/ArrayRenderer';
+import { IDateProps } from "./widgets/DateTime";
+import { ISelectProps } from "./widgets/Select";
+import { IArrayRendererProps } from './widgets/Array';
 import { SliderProps } from "antd/lib/slider";
 import { CascaderProps } from "antd/lib/cascader";
 import { RadioGroupProps } from "antd/lib/radio";
 import { CheckboxGroupProps } from "antd/lib/checkbox";
-import { IUploadRenerProps } from "./widgets/UploadRenderer";
+import { IUploadRenerProps } from "./widgets/Upload";
 import { ReactElement, ReactNode } from "react";
 
 export enum WidgetTypes {
@@ -36,7 +36,6 @@ export enum WidgetTypes {
 export enum FormModes {
   ADD = 'add',
   EDIT = 'edit',
-  BOTH = 'BOTH',
 }
 
 export type GetArrayItem = (index: number) => React.ReactNode;

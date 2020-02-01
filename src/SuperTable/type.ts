@@ -1,6 +1,6 @@
 import { ReactElement, ReactNode } from 'react';
 import { ColumnProps, TableProps, SortOrder } from "antd/lib/table";
-import { IFormItemConfig } from "../SuperForm/type";
+import { IFormItemConfig, FormModes } from "../SuperForm/type";
 import  { ButtonProps } from "antd/lib/button";
 import { ResizeCallbackData } from 'react-resizable';
 import { ColumnRendererConfig, ColumnRendererType } from './columnRenderers';
@@ -70,8 +70,8 @@ type RowActionsAppend<RecordType> = {
   getActions?: (
     data: { text: string, record: RecordType, index: number },
     actions: {
-      openEditModal: OpenEditModal<RecordType>;
-      deleteRecord: DeleteRecord<RecordType>;
+      openEditModal: WrapOpenEditModal;
+      deleteRecord: WrapDeleteRecord;
     }
   ) => Array<ReactElement>;
 }
@@ -79,10 +79,10 @@ export type RowActions<RecordType> = RowActionsAppend<RecordType> & ColumnConfig
 
 export type OnOpenModal = <RecordType>(
   values: RecordPart<RecordType>,
-  mode: FormModalModes
+  mode: FormModes,
 ) => Promise<RecordPart<RecordType> | void> | RecordPart<RecordType> | void;
 
-export type OnSaveData = <RecordType>(values: RecordPart<RecordType>, mode: FormModalModes) => Promise<void> | void;
+export type OnSaveData = <RecordType>(values: RecordPart<RecordType>, mode: FormModes) => Promise<void> | void;
 
 export type OnDelete = <RecordType>(records: Array<RecordPart<RecordType>>) => Promise<void> | void;
 
@@ -91,6 +91,10 @@ export type OpenCreateModal = () => Promise<void>;
 export type OpenEditModal<RecordType> = (values: RecordPart<RecordType>) => Promise<void>;
 
 export type DeleteRecord<RecordType> = (record: Array<RecordPart<RecordType>>) => Promise<void>;
+
+export type WrapOpenEditModal = () => Promise<void>;
+
+export type WrapDeleteRecord = () => Promise<void>;
 
 export type FetchData = (page?: number) => Promise<void>;
 
@@ -147,6 +151,7 @@ export type ISuperTableConfig<RecordType> = {
   onSaveData?: OnSaveData;
   onDelete?: OnDelete;
   rowActions?: RowActions<RecordType>;
+  showDeleteConfirm?: boolean;
 } & TableProps<RecordType>;
 
 export interface Pagination {
@@ -163,11 +168,6 @@ export type Sorter = {
   field: string;
   columnKey: string;
 }
-
-export enum FormModalModes {
-  ADD = 'add',
-  EDIT = 'edit',
-};
 
 // export type OnResize = (width: number) => void;
 export type OnResize = ((e: React.SyntheticEvent<Element, Event>, data: ResizeCallbackData) => any);
