@@ -1,10 +1,11 @@
 import React from 'react';
 import _get from 'lodash.get';
+import memorizeOne from 'memoize-one';
 import DateRenderer, { DateRendererConfig } from './Date';
 import LinkRenderer, { LinkRendererConfig } from './Link';
 import PictureRenderer, { PictureRendererConfig } from './Picture';
 import StatusRenderer, { StatusRendererConfig, StatusMap, Status } from './Status';
-import { IMapperConfig } from '../type';
+import { IMapperConfig, ColumnConfig } from '../type';
 import { IFormItemConfig } from '../../SuperForm/type';
 import { IDateProps } from '../../SuperForm/widgets/DateTime';
 import { ISelectProps } from '../../SuperForm/widgets/Select';
@@ -55,7 +56,7 @@ const mergeConfig = (
   }
 }
 
-const fetchStatusMap = async (url: string, dataPath?: string, valueKey?: string, labelKey?: string) => {
+const fetchStatusMap = memorizeOne(async (url: string, dataPath?: string, valueKey?: string, labelKey?: string) => {
   try {
     const data = await fetchData(url, dataPath);
     if (Array.isArray(data) && valueKey && labelKey) {
@@ -75,33 +76,49 @@ const fetchStatusMap = async (url: string, dataPath?: string, valueKey?: string,
     console.error('fetch status map error:', e);
     throw e;
   }
-}
+});
 
-export default (mapConfig: IMapperConfig, formWidgetConfig?: IFormItemConfig['widgetConfig']) => {
+export default <RecordType extends {}>(columnConfig: ColumnConfig<RecordType>, formWidgetConfig?: IFormItemConfig['widgetConfig']) => {
+  const { map: mapConfig, width } = columnConfig;
+
   if (mapConfig && formWidgetConfig) {
     mergeConfig(mapConfig, formWidgetConfig);
   }
 
-  if (mapConfig &&
-    mapConfig.type === columnRendererTypes.status  
-  ) {
-    const config = mapConfig.config as StatusRendererConfig || {};
-    const { fetchConfig } = config;
-    if (fetchConfig) {
-      const {
-        url, dataPath, labelKey, valueKey,
-      } = fetchConfig;
-  
-      config.statusMap = fetchStatusMap(url, dataPath, valueKey, labelKey);
+  if (mapConfig) {
+    const { type } = mapConfig;
+    let { config = {} } = mapConfig;
+    if (type === columnRendererTypes.status) {
+      config = config as StatusRendererConfig;
+      const { fetchConfig } = config;
+      if (fetchConfig) {
+        const {
+          url, dataPath, labelKey, valueKey,
+        } = fetchConfig;
+    
+        config = {
+          ...config,
+          statusMap: fetchStatusMap(url, dataPath, valueKey, labelKey),
+        };
+      }
     }
+    if (type === columnRendererTypes.picture) {
+      config = config as PictureRendererConfig;
+      const { width: pictureWidth } = config;
+      if (pictureWidth === undefined) {
+        config = { ...config, width };
+      }
+    }
+
+    mapConfig.config = config;
   }
 
-  const { type, config } = mapConfig;
+  const { type, config } = mapConfig || {};
   return (text: string, record: any, index: number) => {
-    const Renderer = renderers[type];
-
-    if (Renderer) {
+    if (type) {
+      const Renderer = renderers[type];
       return <Renderer {...config} value={text} />;
     }
+    return text;
   }
 };

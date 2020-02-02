@@ -23,7 +23,7 @@ const parseColumn = <RecordType extends {}>(
   const { render, map, ...other } = column;
   let renderFunc = render;
   if (map && map.type) {
-    renderFunc = getRenderFunc(map, formWidgetConfig);
+    renderFunc = getRenderFunc(column, formWidgetConfig);
   }
   return {
     render: renderFunc,
@@ -712,6 +712,7 @@ export default class SuperTable<RecordType extends {
       columnsOrder,
       formFieldsOrder,
       searchFieldsOrder,
+      formModalProps,
       ...other
     } = this.props;
 
@@ -810,6 +811,7 @@ export default class SuperTable<RecordType extends {
           cancelText={formModalCancelText}
           cancelBtnProps={formModalCancelBtnProps}
           formFieldsOrder={formFieldsOrder}
+          formModalProps={formModalProps}
         />
         {
           tableArea

@@ -10,7 +10,7 @@ const config: ISuperTableConfig<{
   dataSource: [
     {
       key: '1',
-      name: '123',
+      name: 'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1580624095007&di=02afcf344430def1a2c699391499fab2&imgtype=0&src=http%3A%2F%2Fphotocdn.sohu.com%2F20151213%2Fmp48127759_1449937320516_7.jpg',
       age: 32,
       address: '西湖区湖底公园1号',
     }
@@ -32,8 +32,11 @@ const config: ISuperTableConfig<{
         // } || (text, record, index, ) => {
         //   // 返回自定义渲染结果
         // },
-        render: () => {
-          return '卧槽';
+        // render: () => {
+        //   return '卧槽';
+        // }
+        map: {
+          type: 'picture',
         }
       },
       formItem: {

@@ -4,6 +4,7 @@ import { IFormItemConfig, FormValues, FormModes, } from '../SuperForm/type';
 import { Modal } from 'antd';
 import { ButtonProps } from 'antd/lib/button';
 import { isFunction } from '../common';
+import { ModalProps } from 'antd/lib/modal';
 
 export interface IFormModalProps {
   formItems: Array<IFormItemConfig>;
@@ -17,6 +18,7 @@ export interface IFormModalProps {
   onCancel?: () => void;
   mode: FormModes;
   formFieldsOrder?: Array<string>;
+  formModalProps?: ModalProps;
 }
 
 interface IStaticProperties {
@@ -43,6 +45,7 @@ export default (props: IFormModalProps) => {
     onOk,
     onCancel,
     formFieldsOrder,
+    formModalProps,
   } = props;
 
 
@@ -70,6 +73,8 @@ export default (props: IFormModalProps) => {
       cancelButtonProps={cancelBtnProps}
       onOk={handleOk}
       onCancel={onCancel}
+      maskClosable={false}
+      {...formModalProps}
     >
       <SuperForm
         fieldItems={formItems}

@@ -14,5 +14,5 @@ export default React.memo((props: LinkRendererProps) => {
     linkText = value,
   } = props;
 
-  return <a href={value}>{linkText}</a>
+  return <a href={value} target="_blank" rel="noopener noreferrer">{linkText}</a>
 });

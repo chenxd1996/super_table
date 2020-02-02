@@ -4,10 +4,11 @@ import { IFormItemConfig, FormModes } from "../SuperForm/type";
 import  { ButtonProps } from "antd/lib/button";
 import { ResizeCallbackData } from 'react-resizable';
 import { ColumnRendererConfig, ColumnRendererType } from './columnRenderers';
+import { ModalProps } from 'antd/lib/modal';
 
 export interface IMapperConfig {
   type: ColumnRendererType,
-  config: ColumnRendererConfig,
+  config?: ColumnRendererConfig,
   // config: Object,
 }
 
@@ -132,7 +133,7 @@ export type ISuperTableConfig<RecordType> = {
   formModalOkBtnProps?: ButtonProps;
   formModalCancelText?: string;
   formModalCancelBtnProps?: ButtonProps;
-  // formProps?: FormProps;
+  formModalProps?: ModalProps;
   showSelection?: boolean;
   showColumnConfig?: boolean;
   fetchAtFirst?: boolean;
